@@ -1,0 +1,18 @@
+package com.roomies.api.repository.mongo;
+
+import com.roomies.api.model.Roommate;
+import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.mongodb.repository.Query;
+import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
+
+@Repository
+public interface RoommateRepository extends MongoRepository<Roommate, String> {
+
+    @Query("{$or: [{'email': ?0}, {'governmentIdentification': ?1}]}")
+    Optional<Roommate> findRoommateByEmailOrSocialSecurityHash(String email,String uniqueIdHash);
+    @Query("{$or: [{'email': ?0}, {'phoneNumber': ?1} ,{'governmentIdentification': ?2}]}")
+    Optional<Roommate> findRoommateBy(String email,Long phoneNumber,String uniqueIdHash);
+
+}
