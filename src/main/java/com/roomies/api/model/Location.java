@@ -1,20 +1,20 @@
 package com.roomies.api.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+
+import lombok.*;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
 @AllArgsConstructor
 @NoArgsConstructor
-@Data
+@Getter
+@Setter
 @Document(collection = "location")
 public class Location {
+    @Id
     private String id;
-    @JsonIgnore
     @DBRef
     private Roommate roommate;
     private String country;
@@ -27,4 +27,17 @@ public class Location {
     @Field("apartment_suffix")
     private Object apartmentSuffix;
 
+    @Override
+    public String toString() {
+        return "Location{" +
+                "id='" + id + '\'' +
+                ", roommate=" + (roommate != null ? roommate.getId():null) +
+                ", country='" + country + '\'' +
+                ", area='" + area + '\'' +
+                ", areaCode='" + areaCode + '\'' +
+                ", houseNumber=" + houseNumber +
+                ", street='" + street + '\'' +
+                ", apartmentSuffix=" + apartmentSuffix +
+                '}';
+    }
 }

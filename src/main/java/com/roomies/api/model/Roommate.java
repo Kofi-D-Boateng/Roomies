@@ -1,9 +1,13 @@
 package com.roomies.api.model;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.roomies.api.enums.Grade;
+import com.roomies.api.enums.Rating;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -15,7 +19,9 @@ import java.util.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@Slf4j
 @Document(collection = "roommates")
+@JsonIdentityInfo(generator= ObjectIdGenerators.PropertyGenerator.class, property="id")
 public class Roommate {
 
     @Id
@@ -39,6 +45,14 @@ public class Roommate {
     @Field("profile_picture")
     private String profilePictureHash;
     private String biography;
+    @Field("availability_timestamp")
+    private Long availabilityDate;
+    @Field("positive_rating")
+    private Long positiveRating = 0L;
+    @Field("total_rating")
+    private Long totalRating = 0L;
+    @Field("coed_accepting")
+    private boolean acceptingCoed;
     @Field("current_student")
     private boolean isStudent;
     @Field("mfa_active")
@@ -47,18 +61,51 @@ public class Roommate {
     private boolean isVerified;
     @Field("decommission_timestamp")
     private Long dateForDeletion;
-    @Field("university_name")
-    private String universityName;
-    private String major;
-    @Field("school_grade")
-    private Grade schoolGrade;
     @DBRef
     private Location location;
     @DBRef
     private Demographic demographics;
     @DBRef
     private Preference preference;
+    @Field("roommate_requests")
     @DBRef
-    Set<RoommateRequest> roommateRequests = new HashSet<>();
+    private Set<RoommateRequest> roommateRequests = new HashSet<>();
+    @Field("blocked_roommates")
+    @DBRef
+    private Map<Roommate,String> blockedRoommates = new HashMap<>();
+    @Field("viewers")
+    @DBRef
+    private Set<Roommate> viewersSet = new HashSet<>();
+    @Field("raters")
+    @DBRef
+    private Set<Roommate> raterSet = new HashSet<>();
+    private Set<String> tags = new HashSet<>();
+
+    public void adjustRating(Roommate rater, Rating rating){
+        if(this.raterSet.contains(rater)) return;
+        if(rating == Rating.UP){
+            log.info("Rater ID {} increased rating for {}",rater.getId(),this.id);
+            this.positiveRating++;
+        }
+        this.totalRating++;
+        this.raterSet.add(rater);
+    }
+
+    public void blockRoommate(Roommate blockingRoommate, String reason){
+        if(this.blockedRoommates.containsKey(blockingRoommate) || blockingRoommate == this) return;
+        log.info("{} is blocking roommate with id: {}",this.id,blockingRoommate.getId());
+        this.blockedRoommates.putIfAbsent(blockingRoommate,reason);
+    }
+
+    public void addTag(String tag){
+        if(this.tags.contains(tag)) return;
+        this.tags.add(tag);
+    }
+
+    public void increaseViewership(Roommate viewer){
+        if(this.viewersSet.contains(viewer) || viewer == this) return;
+        this.viewersSet.add(viewer);
+    }
+
 
 }
