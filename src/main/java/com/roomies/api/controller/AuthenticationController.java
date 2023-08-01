@@ -69,7 +69,7 @@ public class AuthenticationController {
         if(request.getEmail() == null || request.getPassword() == null){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
-        ResponseTuple<ServiceResponse, Optional<Roommate>,String[]> response =  roommateService.fetchUserInfo(request);
+        ResponseTuple<ServiceResponse, Optional<Roommate>,String[]> response =  roommateService.loginUser(request);
 
         ServiceResponse serviceResponse = response.getVal1();
         Roommate r = response.getVal2().get();

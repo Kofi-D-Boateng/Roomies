@@ -7,8 +7,10 @@ import com.roomies.api.model.RegistrationRequest;
 import com.roomies.api.model.Roommate;
 import com.roomies.api.repository.mongo.AccountValidationRepository;
 import com.roomies.api.repository.mongo.RoommateRepository;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -27,16 +29,17 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(MockitoExtension.class)
 @SpringBootTest
 class RegistrationServiceTest {
     private static final String EMAIL_VERIFICATION_TOPIC = "email_verification";
     private static final Long VALIDATION_PERIOD = 10L;
 
-    RegistrationRequest request;
-    Roommate roommate;
+    static RegistrationRequest request;
+    static Roommate roommate;
 
-    String hash;
+    static String hash;
 
     @Mock
     RoommateRepository roommateRepository;
@@ -48,6 +51,7 @@ class RegistrationServiceTest {
     KafkaTemplate<String,String> kafkaTemplate;
 
     @Mock
+    static
     BCryptPasswordEncoder encoder;
 
     @InjectMocks
@@ -63,8 +67,8 @@ class RegistrationServiceTest {
         }
     }
 
-    @BeforeEach
-    public void setUp(){
+    @BeforeAll
+    public static void setUp(){
         request = new RegistrationRequest();
         roommate = new Roommate();
         hash = encoder.encode(request.getGovernmentIdentification());

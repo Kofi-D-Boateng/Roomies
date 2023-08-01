@@ -21,4 +21,14 @@ public class Utils {
             }
         }
     }
+
+    public static boolean emailCheck(String email){
+        String regex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
+        return email.matches(regex);
+    }
+
+    public static boolean passwordChecker(String password){
+        String regex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$";
+        return password.trim().length() >= 8 && password.matches(regex);
+    }
 }
