@@ -1,6 +1,7 @@
 package com.roomies.api.configuration.security;
 
 
+import com.roomies.api.middleware.RateLimiterInterceptor;
 import com.roomies.api.middleware.TokenValidatorInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -60,6 +61,7 @@ public class ApiSecurityConfiguration {
                     auth.anyRequest().permitAll();
                 })
                 .addFilterBefore(new TokenValidatorInterceptor(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(new RateLimiterInterceptor(),TokenValidatorInterceptor.class)
                 .sessionManagement(session->{
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
                 })

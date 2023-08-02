@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @Data
 public class RequestContext implements RequestLimitingContext {
     private Long timestamp;
-    private Integer attempts = 0;
-    private Integer exceededAttempts = 0;
+    private Integer attempts;
+    private Integer exceededAttempts;
 
     @Override
     public void incrementAttempts() {
