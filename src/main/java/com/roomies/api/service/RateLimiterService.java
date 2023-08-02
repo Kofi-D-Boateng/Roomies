@@ -45,7 +45,7 @@ public class RateLimiterService implements Limiter {
     public void resetSessionLimit(HttpServletRequest request) {
         String ip = Utils.getRealIp(request);
         if(!rateLimitHashMap.containsKey(ip)){
-            RequestContext requestContext = new RequestContext(LocalDateTime.now().plusSeconds(EXTENDED_BY).toEpochSecond(ZoneOffset.UTC),0,0);
+            RequestContext requestContext = new RequestContext(LocalDateTime.now().plusSeconds(EXTENDED_BY).toEpochSecond(ZoneOffset.UTC),1,0);
             rateLimitHashMap.putIfAbsent(ip,requestContext);
             return;
         }
@@ -59,7 +59,7 @@ public class RateLimiterService implements Limiter {
         if(checkForBlockedIp(ip)) return RateLimitStatus.BLOCKED;
         RequestContext requestContext = rateLimitHashMap.get(ip);
         if(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) >= requestContext.getTimestamp()){
-            requestContext.resetContext(LocalDateTime.now().plusSeconds(EXTENDED_BY).toEpochSecond(ZoneOffset.UTC));
+            resetSessionLimit(request);
             return RateLimitStatus.ACCEPTABLE;
         }
         if(requestContext.getAttempts() < MAX_ATTEMPTS){

@@ -26,8 +26,8 @@ public class RequestContext implements RequestLimitingContext {
 
     @Override
     public void resetContext(Long newTimeStamp) {
-        if(this.attempts > 1) this.attempts = 1;
-        if(this.exceededAttempts > 0) this.exceededAttempts = 0;
+        this.attempts = 1;
+        this.exceededAttempts = 0;
         this.timestamp = newTimeStamp;
     }
 }

@@ -52,13 +52,13 @@ class RateLimiterServiceTest {
 
         rateLimiterService.resetSessionLimit(request);
 
-        assertEquals(1, RateLimiterService.getRateLimitHashMap().size());
+        assertEquals(2, RateLimiterService.getRateLimitHashMap().size());
         RequestContext context = RateLimiterService.getRateLimitHashMap().get("1.2.3.5");
         assertEquals(1, context.getAttempts());
     }
 
     @Test
-    void checkForAcceptableRequest() {
+    void checkForAcceptableRequest() throws InterruptedException {
         HttpServletRequest request = mock(HttpServletRequest.class);
 
         when(Utils.getRealIp(request)).thenReturn("1.2.3.5");
@@ -79,6 +79,13 @@ class RateLimiterServiceTest {
         for(int i = attempts;i <= RateLimiterService.MAX_ATTEMPTS_BEFORE_BAN;i++) status = rateLimiterService.checkForAcceptableRequest(request);
 
         assertEquals(RateLimitStatus.BLOCKED, status);
+        when(Utils.getRealIp(request)).thenReturn("1.2.3.3");
+        for(int i = 0; i < 4;i++){
+            status = rateLimiterService.checkForAcceptableRequest(request);
+            assertEquals(RateLimitStatus.ACCEPTABLE, status);
+            if(i == 2) while(r.get("1.2.3.3").getTimestamp() > LocalDateTime.now().toEpochSecond(ZoneOffset.UTC));
+        }
+        assertEquals(1, (int) r.get("1.2.3.3").getAttempts());
     }
 
     @Test
