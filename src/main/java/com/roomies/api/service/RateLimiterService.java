@@ -2,9 +2,9 @@ package com.roomies.api.service;
 
 import com.roomies.api.enums.RateLimitStatus;
 import com.roomies.api.interfaces.Limiter;
-import com.roomies.api.model.session.BlockedEntity;
+import com.roomies.api.model.geolocation.IPAddressInfo;
 import com.roomies.api.model.session.RequestContext;
-import com.roomies.api.repository.mongo.BlockedEntityRepository;
+import com.roomies.api.repository.mongo.IPAddressInfoRepository;
 import com.roomies.api.util.Utils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,13 +29,14 @@ public class RateLimiterService implements Limiter {
     protected static final Long MAX_ATTEMPTS_BEFORE_BAN = 100L;
 
     @Autowired
-    private final BlockedEntityRepository blockedEntityRepository;
+    private final IPAddressInfoRepository ipAddressInfoRepository;
 
 
     public void setup() {
-        List<BlockedEntity> blockedEntityList = blockedEntityRepository.findAll();
+        List<IPAddressInfo> blockedEntityList = ipAddressInfoRepository.findAll();
         if(blockedEntityList.size() == 0) return;
-        blockedEntityList.stream().parallel().map(BlockedEntity::getIp).forEach(blockedIpSet::add);
+        blockedEntityList.stream().parallel().map(IPAddressInfo::getIp).forEach(blockedIpSet::add);
+        System.out.println(RateLimiterService.getBlockedIpSet());
     }
 
     public static ConcurrentHashMap<String, RequestContext> getRateLimitHashMap(){return rateLimitHashMap;}
@@ -83,13 +85,19 @@ public class RateLimiterService implements Limiter {
 
     @Override
     public void blockIp(String ip, String userAgent) {
-        BlockedEntity entity = new BlockedEntity();
-        entity.setIp(ip);
+        Optional<IPAddressInfo> ipAddressInfoOptional = ipAddressInfoRepository.findByIp(ip);
+        IPAddressInfo entity;
+        if(ipAddressInfoOptional.isEmpty()){
+            entity = new IPAddressInfo();
+            entity.setIp(ip);
+        }else{
+            entity = ipAddressInfoOptional.get();
+        }
         entity.getUserAgents().add(userAgent);
         entity.setBlockedDate(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC));
         entity.setReason("Exceed too many request when being rate limited.");
         blockedIpSet.add(ip);
-        blockedEntityRepository.save(entity);
+        ipAddressInfoRepository.save(entity);
     }
 
     @Override
