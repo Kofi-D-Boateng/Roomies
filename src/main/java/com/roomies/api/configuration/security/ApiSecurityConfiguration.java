@@ -1,8 +1,11 @@
 package com.roomies.api.configuration.security;
 
 
+import com.roomies.api.middleware.RateLimiterInterceptor;
+import com.roomies.api.middleware.RoommateLocationInterceptor;
 import com.roomies.api.middleware.TokenValidatorInterceptor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -12,6 +15,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.LogoutFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -34,38 +38,52 @@ public class ApiSecurityConfiguration {
         config.setAllowedHeaders(Arrays.asList("X-Forwarded-For", "X-Real-IP", "Authorization"));
         config.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**",config);
+        source.registerCorsConfiguration("/*",config);
         return source;
     }
 
-//    @Bean
-//    @Order(1)
-//    SecurityFilterChain regularFilterChain(HttpSecurity http) throws Exception {
-//        return http
-//                .authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
-//                .sessionManagement(session-> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-//                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-//                .csrf(AbstractHttpConfigurer::disable)
-//                .formLogin(AbstractHttpConfigurer::disable)
-//                .build();
-//    }
+    @Bean
+    @Order(1)
+    public FilterRegistrationBean<RateLimiterInterceptor> rateLimiterInterceptorFilterRegistrationBean(){
+        FilterRegistrationBean<RateLimiterInterceptor> registrationBean = new FilterRegistrationBean<>();
+        registrationBean.setFilter(new RateLimiterInterceptor());
+        registrationBean.addUrlPatterns("/*");
+        return registrationBean;
+    }
+
+    @Bean
+    @Order(2)
+    public FilterRegistrationBean<RoommateLocationInterceptor> roommateLocationInterceptorFilterRegistrationBean(){
+        FilterRegistrationBean<RoommateLocationInterceptor> registrationBean = new FilterRegistrationBean<>();
+        registrationBean.setFilter(new RoommateLocationInterceptor());
+        registrationBean.addUrlPatterns("/*");
+        return registrationBean;
+    }
+
+    @Bean
+    @Order(3)
+    public FilterRegistrationBean<TokenValidatorInterceptor> tokenValidatorInterceptorFilterRegistrationBean(){
+        FilterRegistrationBean<TokenValidatorInterceptor> registrationBean = new FilterRegistrationBean<>();
+        String roommatePattern = String.format("/api/%s/roommate/*",apiVersion);
+        String searchPattern = String.format("/api/%s/search/*",apiVersion);
+        registrationBean.setFilter(new TokenValidatorInterceptor());
+        registrationBean.addUrlPatterns(roommatePattern,searchPattern);
+        return registrationBean;
+    }
 
     @Bean
     SecurityFilterChain apiSecuredFilterChain(HttpSecurity http) throws Exception {
-        String pattern = String.format("/api/%s/*/secured/**",apiVersion);
-        return http.
-                securityMatcher(pattern)
+        return http
                 .authorizeHttpRequests(auth ->{
-                    auth.requestMatchers(pattern).authenticated();
                     auth.anyRequest().permitAll();
                 })
-                .addFilterBefore(new TokenValidatorInterceptor(), UsernamePasswordAuthenticationFilter.class)
                 .sessionManagement(session->{
                     session.sessionCreationPolicy(SessionCreationPolicy.STATELESS);
                 })
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
+                .httpBasic(AbstractHttpConfigurer::disable)
                 .build();
     }
 

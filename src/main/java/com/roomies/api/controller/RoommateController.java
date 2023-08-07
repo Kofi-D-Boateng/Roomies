@@ -17,7 +17,7 @@ import java.util.Map;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping(path = "api/v1/roommate")
+@RequestMapping(path = "/api/v1/roommate")
 @Slf4j
 public class RoommateController {
 
