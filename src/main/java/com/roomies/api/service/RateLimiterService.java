@@ -8,6 +8,7 @@ import com.roomies.api.repository.mongo.IPAddressInfoRepository;
 import com.roomies.api.util.Utils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,27 +22,28 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class RateLimiterService implements Limiter {
     private static final ConcurrentHashMap<String, RequestContext> rateLimitHashMap = new ConcurrentHashMap<>();
-    private static final Set<String> blockedIpSet = new HashSet<>();
+    private Set<String> blockedIpSet;
     protected static final Long MAX_ATTEMPTS = 20L;
     protected static final Long EXTENDED_BY = 5L;
     protected static final Long MAX_ATTEMPTS_BEFORE_BAN = 100L;
-
     @Autowired
     private final IPAddressInfoRepository ipAddressInfoRepository;
 
 
-    public void setup() {
+    void setup() {
+        blockedIpSet = new HashSet<>();
         List<IPAddressInfo> blockedEntityList = ipAddressInfoRepository.findAll();
         if(blockedEntityList.size() == 0) return;
         blockedEntityList.stream().parallel().map(IPAddressInfo::getIp).forEach(blockedIpSet::add);
-        System.out.println(RateLimiterService.getBlockedIpSet());
+        log.info("Set up for rate-limiting services has finished....");
     }
 
     public static ConcurrentHashMap<String, RequestContext> getRateLimitHashMap(){return rateLimitHashMap;}
 
-    public static Set<String> getBlockedIpSet(){return blockedIpSet;}
+    public Set<String> getBlockedIpSet(){return blockedIpSet;}
 
     @Override
     public void resetSessionLimit(HttpServletRequest request) {
@@ -56,6 +58,7 @@ public class RateLimiterService implements Limiter {
 
     @Override
     public RateLimitStatus checkForAcceptableRequest(HttpServletRequest request) {
+        if(blockedIpSet == null) setup();
         String ip = Utils.getRealIp(request);
         if(!rateLimitHashMap.containsKey(ip)) createRequestContextEntry(ip);
         if(checkForBlockedIp(ip)) return RateLimitStatus.BLOCKED;

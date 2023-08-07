@@ -64,7 +64,6 @@ class RateLimiterServiceTest {
         assertEquals(2, RateLimiterService.getRateLimitHashMap().size());
         RequestContext context = RateLimiterService.getRateLimitHashMap().get("1.2.3.5");
         assertEquals(1, context.getAttempts());
-        System.out.println(RateLimiterService.getBlockedIpSet());
     }
 
     @Test
@@ -100,7 +99,6 @@ class RateLimiterServiceTest {
     @Test
     void checkForBlockedIp() {
         lenient().when(repository.findByIp("1.2.3.5")).thenReturn(Optional.of(ipAddressInfo));
-        System.out.println(RateLimiterService.getBlockedIpSet());
         assertTrue(rateLimiterService.checkForBlockedIp("1.2.3.5"));
         assertFalse(rateLimiterService.checkForBlockedIp("1.2.3.4"));
     }

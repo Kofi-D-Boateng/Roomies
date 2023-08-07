@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping(path = "api/v1/search")
+@RequestMapping(path = "/api/v1/search")
 @Slf4j
 public class SearchController {
 

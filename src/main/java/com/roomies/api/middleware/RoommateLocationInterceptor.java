@@ -10,6 +10,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -21,16 +22,18 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @AllArgsConstructor
+@NoArgsConstructor
 @Slf4j
 public class RoommateLocationInterceptor extends OncePerRequestFilter {
 
     private static final String GEOLOCATION_DOMAIN = "https://api.ip2location.io/?";
-    @Value("com.roomies.geolocation.key")
+    @Value("${com.roomies.geolocation.key}")
     private String apiKey;
     @Autowired
     IPAddressInfoRepository ipAddressInfoRepository;
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        log.info("Passing through roommate-location interceptor....");
         if(apiKey == null){
             response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             log.error("Api Key is not present in geolocation filter.... ");
