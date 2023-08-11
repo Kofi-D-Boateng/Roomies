@@ -1,10 +1,13 @@
 package com.roomies.api.service;
 
+import com.google.gson.Gson;
 import com.roomies.api.enums.MFARequest;
 import com.roomies.api.enums.OAuth;
 import com.roomies.api.enums.ServiceResponse;
 import com.roomies.api.model.Roommate;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,19 +21,25 @@ public class AuthenticationService {
     public static ConcurrentHashMap<String,Long> mfaCacheMap = new ConcurrentHashMap<>();
     public static String EMAIL_ROUTE_KEY = "email_multiFactor";
     public static String SMS_ROUTE_KEY = "sms_multiFactor";
+    @Autowired
+    KafkaTemplate<String,String> kafkaTemplate;
 
-    public boolean sendMultiFactorAuthenticationCode(Roommate roommate, MFARequest request){
+    public boolean sendMultiFactorAuthenticationCode(String id, MFARequest request){
         String code = UUID.randomUUID().toString();
-        String mfsPref = (String) roommate.getPreference().getPreferences().get("MFA_PREFERENCE");
-        String channelKey = mfsPref.contains("SMS") ? SMS_ROUTE_KEY : EMAIL_ROUTE_KEY;
         if(mfaCacheMap.containsKey(code)) code = UUID.randomUUID().toString();
         else mfaCacheMap.putIfAbsent(code, LocalDateTime.now().plusMinutes(10L).toEpochSecond(ZoneOffset.UTC));
         if(request.equals(MFARequest.SMS)){
-            String advice = "CHOOSE CORRECT SETUP BEFORE BUILDING THE REST OF THE LOGIC";
-        }else{
-            String advice = "CHOOSE CORRECT SETUP BEFORE BUILDING THE REST OF THE LOGIC";
+            log.info("Sending MFA request for roommate: {} @ {}",id,LocalDateTime.now());
+            kafkaTemplate.send(SMS_ROUTE_KEY,id);
+            log.info("Sent notification request @ {}",LocalDateTime.now());
+            return true;
+        }else if(request.equals(MFARequest.EMAIL)){
+            log.info("Sending MFA request for roommate: {} @ {}",id,LocalDateTime.now());
+            kafkaTemplate.send(EMAIL_ROUTE_KEY,id);
+            log.info("Sent notification request @ {}",LocalDateTime.now());
+            return true;
         }
-        return true;
+        return false;
     }
 
     public boolean checkTimestampOfMultiFactorAuthentication(String token){

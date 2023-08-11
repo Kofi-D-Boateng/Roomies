@@ -4,6 +4,7 @@ package com.roomies.api.configuration.security;
 import com.roomies.api.middleware.RateLimiterInterceptor;
 import com.roomies.api.middleware.RoommateLocationInterceptor;
 import com.roomies.api.middleware.TokenValidatorInterceptor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -29,6 +30,12 @@ public class ApiSecurityConfiguration {
 
     @Value("${api.version}")
     private String apiVersion;
+    @Autowired
+    TokenValidatorInterceptor tokenValidatorInterceptor;
+    @Autowired
+    RoommateLocationInterceptor roommateLocationInterceptor;
+    @Autowired
+    RateLimiterInterceptor rateLimiterInterceptor;
 
     @Bean
     CorsConfigurationSource corsConfigurationSource(){
@@ -46,7 +53,7 @@ public class ApiSecurityConfiguration {
     @Order(1)
     public FilterRegistrationBean<RateLimiterInterceptor> rateLimiterInterceptorFilterRegistrationBean(){
         FilterRegistrationBean<RateLimiterInterceptor> registrationBean = new FilterRegistrationBean<>();
-        registrationBean.setFilter(new RateLimiterInterceptor());
+        registrationBean.setFilter(rateLimiterInterceptor);
         registrationBean.addUrlPatterns("/*");
         return registrationBean;
     }
@@ -55,7 +62,7 @@ public class ApiSecurityConfiguration {
     @Order(2)
     public FilterRegistrationBean<RoommateLocationInterceptor> roommateLocationInterceptorFilterRegistrationBean(){
         FilterRegistrationBean<RoommateLocationInterceptor> registrationBean = new FilterRegistrationBean<>();
-        registrationBean.setFilter(new RoommateLocationInterceptor());
+        registrationBean.setFilter(roommateLocationInterceptor);
         registrationBean.addUrlPatterns("/*");
         return registrationBean;
     }
@@ -66,7 +73,7 @@ public class ApiSecurityConfiguration {
         FilterRegistrationBean<TokenValidatorInterceptor> registrationBean = new FilterRegistrationBean<>();
         String roommatePattern = String.format("/api/%s/roommate/*",apiVersion);
         String searchPattern = String.format("/api/%s/search/*",apiVersion);
-        registrationBean.setFilter(new TokenValidatorInterceptor());
+        registrationBean.setFilter(tokenValidatorInterceptor);
         registrationBean.addUrlPatterns(roommatePattern,searchPattern);
         return registrationBean;
     }

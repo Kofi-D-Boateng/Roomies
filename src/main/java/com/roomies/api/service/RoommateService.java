@@ -42,20 +42,16 @@ public class RoommateService {
     BCryptPasswordEncoder encoder;
     public ResponseTuple<ServiceResponse, Optional<Roommate>, String[]> loginUser(LoginRequest request) {
 
-        Optional<Roommate> optionalRoommate = roommateRepository.findRoommateBy(request.getEmail(), request.getPhoneNumber(), null);
+        Optional<Roommate> optionalRoommate = roommateRepository.findByEmail(request.getEmail());
 
-        if(optionalRoommate.isEmpty()){
+        if(optionalRoommate.isEmpty() || !encoder.matches(request.getPassword(), optionalRoommate.get().getPassword())){
             Tuple2<ServiceResponse, Optional<Roommate>> Tuple2;
-            return new ResponseTuple<>(ServiceResponse.FAULTY_EMAIL,optionalRoommate,null);
+            return new ResponseTuple<>(ServiceResponse.FAULTY_EMAIL_OR_PASSWORD,optionalRoommate,null);
         }
 
-        if(!encoder.matches(request.getPassword(), optionalRoommate.get().getPassword())){
-            return new ResponseTuple<>(ServiceResponse.FAULTY_PASSWORD,optionalRoommate,null);
-        }
+        //
 
-        String[] keys = apiKeyManagementService.generateAccessAndRefreshToken();
-
-        return new ResponseTuple<>(ServiceResponse.SUCCESSFUL,optionalRoommate,keys);
+        return new ResponseTuple<>(ServiceResponse.SUCCESSFUL,optionalRoommate,apiKeyManagementService.generateAccessAndRefreshToken());
     }
 
     public ResponseTuple<ServiceResponse,Roommate,Object> getUserProfile(String id) {

@@ -13,13 +13,21 @@ import com.roomies.api.service.AuthenticationService;
 import com.roomies.api.service.RoommateService;
 import com.roomies.api.util.custom.ResponseTuple;
 import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -35,60 +43,84 @@ public class AuthenticationController {
     AuthenticationService authenticationService;
     @Autowired
     RoommateRedisRepository repository;
-    @Autowired
-    ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    protected final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    @Getter
+    @Setter
     private static class ReturnData {
         RoommateDTO roommate;
-        Map<String,String> tokens;
-
+        String[][] tokens;
         boolean multiFactorAuth = false;
 
         public ReturnData(RoommateDTO roommate, String[] tokens){
             this.roommate = roommate;
-            this.tokens = this.distributeTokens(tokens);
+            distributeTokens(tokens);
+
         }
 
         public ReturnData(RoommateDTO roommate, String[] tokens, boolean multiFactorAuth){
             this.roommate = roommate;
-            this.tokens = this.distributeTokens(tokens);
+            distributeTokens(tokens);
             this.multiFactorAuth = multiFactorAuth;
         }
 
-        private Map<String,String> distributeTokens(String[] tokens){
-            Map<String,String> map = new HashMap<>();
-            map.putIfAbsent("accessToken",tokens[0]);
-            map.putIfAbsent("refreshToken",tokens[1]);
-            return map;
+        private void distributeTokens(String[] tokens){
+            if(tokens.length < 2){
+                log.error("Tokens are not present when going to distribute.... Token: {}",Arrays.toString(tokens));
+            }
+            this.tokens = new String[2][2];
+            this.tokens[0][0] = "accessToken";
+            this.tokens[0][1] = tokens[0];
+            this.tokens[1][0] = "refreshToken";
+            this.tokens[1][1] = tokens[1];
+        }
+
+        @Override
+        public String toString() {
+            return "ReturnData{" +
+                    "roommate=" + roommate +
+                    ", tokens=" + Arrays.toString(tokens) +
+                    ", multiFactorAuth=" + multiFactorAuth +
+                    '}';
         }
     }
 
     @PostMapping("/user/login")
-    public ResponseEntity<Object> loginRoommate(@RequestBody LoginRequest request){
-        log.info("Login Request: {}",request);
+    public ResponseEntity<ReturnData> loginRoommate(@RequestBody LoginRequest request){
+        log.info("Attempting login for request: {} @ {}",request,LocalDateTime.now());
         if(request.getEmail() == null || request.getPassword() == null){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
         ResponseTuple<ServiceResponse, Optional<Roommate>,String[]> response =  roommateService.loginUser(request);
 
         ServiceResponse serviceResponse = response.getVal1();
-        Roommate r = response.getVal2().get();
 
-        if(serviceResponse.equals(ServiceResponse.FAULTY_PASSWORD) || serviceResponse.equals(ServiceResponse.FAULTY_EMAIL)){
-            log.warn("Unauthorized attempt to log in for roommate: {}",r.getId());
+
+        if(serviceResponse.equals(ServiceResponse.FAULTY_EMAIL_OR_PASSWORD) || serviceResponse.equals(ServiceResponse.UNSUCCESSFUL)){
+            String stamp = LocalDateTime.now(ZoneOffset.UTC).format(formatter);
+            log.warn("Unauthorized attempt to log in using request {} @ {}",request, stamp);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
         }else if(response.getVal2().isEmpty()){
-            log.error("Error within the server when requesting login attempt for roommate: {}",r.getId());
+            String stamp = LocalDateTime.now(ZoneOffset.UTC).format(formatter);
+            log.error("Error within the server when requesting login attempt for request {} @ {}",request,stamp);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
 
+        Roommate r = response.getVal2().get();
+
         if(r.isMfaActive()){
-            return ResponseEntity.status(HttpStatus.OK).body(new ReturnData(null,response.getVal3()));
+            return ResponseEntity.status(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new ReturnData(null,response.getVal3()));
         }
 
         RoommateDTO roommateDTO = objectMapper.convertValue(r,RoommateDTO.class);
+        System.out.println("roommateDTO = " + roommateDTO);
 
-        return ResponseEntity.status(HttpStatus.OK).body(new ReturnData(roommateDTO, response.getVal3()));
+        return ResponseEntity.status(HttpStatus.OK)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ReturnData(roommateDTO, response.getVal3(),r.isAuthorized()));
     }
 
     @GetMapping("/google-oauth")
@@ -118,13 +150,13 @@ public class AuthenticationController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    @PostMapping("/generate-mfa-request")
-    public ResponseEntity<Object> generateMultiFactorAuthenticationRequest(@RequestBody MFARequest request,@RequestBody Roommate roommate){
-        if(request == null || roommate == null){
-            log.error("Missing either roommate info from body or proper request. Roommate: {}, Request: {}",roommate,request);
+    @GetMapping("/generate-mfa-request")
+    public ResponseEntity<Object> generateMultiFactorAuthenticationRequest(@RequestParam("id") String id, @RequestParam("method") MFARequest request){
+        if(request == null || id == null){
+            log.error("Missing either roommate info from body or proper request. Roommate: {}, Request: {}",id,request);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
-        boolean result = authenticationService.sendMultiFactorAuthenticationCode(roommate,request);
+        boolean result = authenticationService.sendMultiFactorAuthenticationCode(id,request);
         if(!result){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }

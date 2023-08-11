@@ -1,9 +1,9 @@
 package com.roomies.api.repository.redis;
 
 import com.roomies.api.model.RoommateRequest;
-import org.springframework.data.mongodb.repository.MongoRepository;
+import org.springframework.data.keyvalue.repository.KeyValueRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface RoommateRequestRedisRepository extends MongoRepository<RoommateRequest,String> {
+public interface RoommateRequestRedisRepository extends KeyValueRepository<RoommateRequest,String> {
 }
