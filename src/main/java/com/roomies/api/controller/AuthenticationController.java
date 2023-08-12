@@ -13,7 +13,6 @@ import com.roomies.api.service.AuthenticationService;
 import com.roomies.api.service.RoommateService;
 import com.roomies.api.util.custom.ResponseTuple;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -28,8 +27,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 @AllArgsConstructor
@@ -116,10 +113,8 @@ public class AuthenticationController {
         }
 
         RoommateDTO roommateDTO = objectMapper.convertValue(r,RoommateDTO.class);
-        System.out.println("roommateDTO = " + roommateDTO);
 
         return ResponseEntity.status(HttpStatus.OK)
-                .contentType(MediaType.APPLICATION_JSON)
                 .body(new ReturnData(roommateDTO, response.getVal3(),r.isAuthorized()));
     }
 
