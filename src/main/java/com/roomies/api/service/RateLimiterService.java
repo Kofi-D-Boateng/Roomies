@@ -8,8 +8,10 @@ import com.roomies.api.repository.mongo.IPAddressInfoRepository;
 import com.roomies.api.util.Utils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -26,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RateLimiterService implements Limiter {
     private static final ConcurrentHashMap<String, RequestContext> rateLimitHashMap = new ConcurrentHashMap<>();
     private Set<String> blockedIpSet;
-    protected static final Long MAX_ATTEMPTS = 20L;
+    protected static final Long MAX_ATTEMPTS = 15L;
     protected static final Long EXTENDED_BY = 5L;
     protected static final Long MAX_ATTEMPTS_BEFORE_BAN = 100L;
     @Autowired
@@ -49,7 +51,7 @@ public class RateLimiterService implements Limiter {
     public void resetSessionLimit(HttpServletRequest request) {
         String ip = Utils.getRealIp(request);
         if(!rateLimitHashMap.containsKey(ip)){
-            RequestContext requestContext = new RequestContext(LocalDateTime.now().plusSeconds(EXTENDED_BY).toEpochSecond(ZoneOffset.UTC),1,0);
+            RequestContext requestContext = new RequestContext(LocalDateTime.now().plusSeconds(EXTENDED_BY).toEpochSecond(ZoneOffset.UTC),1,0,0,0L);
             rateLimitHashMap.putIfAbsent(ip,requestContext);
             return;
         }
@@ -60,15 +62,19 @@ public class RateLimiterService implements Limiter {
     public RateLimitStatus checkForAcceptableRequest(HttpServletRequest request) {
         if(blockedIpSet == null) setup();
         String ip = Utils.getRealIp(request);
+        log.info("Checking request rate for {}",ip);
         if(!rateLimitHashMap.containsKey(ip)) createRequestContextEntry(ip);
         if(checkForBlockedIp(ip)) return RateLimitStatus.BLOCKED;
         RequestContext requestContext = rateLimitHashMap.get(ip);
         if(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC) >= requestContext.getTimestamp()){
+//            log.info("Resetting request context: {}",requestContext);
             resetSessionLimit(request);
+//            System.out.println("requestContext = " + requestContext);
             return RateLimitStatus.ACCEPTABLE;
         }
         if(requestContext.getAttempts() < MAX_ATTEMPTS){
             requestContext.incrementAttempts();
+//            System.out.println("requestContext = " + requestContext);
             return RateLimitStatus.ACCEPTABLE;
         }
 
@@ -113,5 +119,5 @@ public class RateLimiterService implements Limiter {
         rateLimitHashMap.clear();
     }
 
-    private void createRequestContextEntry(String ip){rateLimitHashMap.putIfAbsent(ip,new RequestContext(LocalDateTime.now().plusSeconds(EXTENDED_BY).toEpochSecond(ZoneOffset.UTC),0,0));}
+    private void createRequestContextEntry(String ip){rateLimitHashMap.putIfAbsent(ip,new RequestContext(LocalDateTime.now().plusSeconds(EXTENDED_BY).toEpochSecond(ZoneOffset.UTC),0,0,0,0L));}
 }

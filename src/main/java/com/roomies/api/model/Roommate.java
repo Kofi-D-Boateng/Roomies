@@ -1,11 +1,17 @@
 package com.roomies.api.model;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.roomies.api.enums.Grade;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.roomies.api.enums.Rating;
+import com.roomies.api.util.deserializers.RoommateMapKeyDeserializer;
+import com.roomies.api.util.deserializers.RoommateSetDeserializer;
+import com.roomies.api.util.serializers.RoommateMapSerializer;
+import com.roomies.api.util.serializers.RoommateRequestSerializer;
+import com.roomies.api.util.serializers.RoommateSetSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.annotation.Id;
@@ -13,17 +19,20 @@ import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+
+import java.io.Serializable;
 import java.util.*;
+
 
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Slf4j
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Document(collection = "roommates")
-@JsonIdentityInfo(generator= ObjectIdGenerators.PropertyGenerator.class, property="id")
-public class Roommate {
-
+public class Roommate implements Serializable {
+    private static final long serializableId = 45466425627L;
     @Id
     private String id;
     @Field("oauth_id")
@@ -57,8 +66,8 @@ public class Roommate {
     private boolean isStudent;
     @Field("mfa_active")
     private boolean mfaActive;
-    @Field("verification_done")
-    private boolean isVerified;
+    @Field("is_enabled")
+    private boolean authorized;
     @Field("decommission_timestamp")
     private Long dateForDeletion;
     @DBRef
@@ -69,15 +78,21 @@ public class Roommate {
     private Preference preference;
     @Field("roommate_requests")
     @DBRef
+    @JsonSerialize(using = RoommateRequestSerializer.class)
     private Set<RoommateRequest> roommateRequests = new HashSet<>();
     @Field("blocked_roommates")
     @DBRef
+    @JsonSerialize(keyUsing = RoommateMapSerializer.class)
+    @JsonDeserialize(keyUsing= RoommateMapKeyDeserializer.class)
     private Map<Roommate,String> blockedRoommates = new HashMap<>();
     @Field("viewers")
     @DBRef
+    @JsonSerialize(using = RoommateSetSerializer.class)
     private Set<Roommate> viewersSet = new HashSet<>();
     @Field("raters")
     @DBRef
+    @JsonSerialize(using = RoommateSetSerializer.class)
+    @JsonDeserialize(using = RoommateSetDeserializer.class)
     private Set<Roommate> raterSet = new HashSet<>();
     private Set<String> tags = new HashSet<>();
 
@@ -106,6 +121,4 @@ public class Roommate {
         if(this.viewersSet.contains(viewer) || viewer == this) return;
         this.viewersSet.add(viewer);
     }
-
-
 }

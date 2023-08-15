@@ -5,7 +5,6 @@ import com.roomies.api.enums.ServiceResponse;
 import com.roomies.api.model.*;
 import com.roomies.api.repository.mongo.RoommateRepository;
 import com.roomies.api.repository.mongo.RoommateRequestRepository;
-import com.roomies.api.repository.redis.*;
 import com.roomies.api.util.custom.ResponseTuple;
 import lombok.AllArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +15,9 @@ import reactor.util.function.Tuple2;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -27,84 +28,181 @@ public class RoommateService {
     @Autowired
     RoommateRequestRepository roommateRequestRepository;
     @Autowired
-    RoommateRedisRepository redisRepository;
-    @Autowired
-    RoommateRequestRedisRepository roommateRequestRedisRepository;
-    @Autowired
-    DemographicRedisRepository demographicRedisRepository;
-    @Autowired
-    LocationRedisRepository locationRedisRepository;
-    @Autowired
-    PreferenceRedisRepository preferenceRedisRepository;
+    RedisService redisService;
     @Autowired
     ApiKeyManagementService apiKeyManagementService;
     @Autowired
     BCryptPasswordEncoder encoder;
-    public ResponseTuple<ServiceResponse, Optional<Roommate>, String[]> loginUser(LoginRequest request) {
 
-        Optional<Roommate> optionalRoommate = roommateRepository.findRoommateBy(request.getEmail(), request.getPhoneNumber(), null);
+    public ServiceResponse acceptRequest(String requestId) {
+        Optional<RoommateRequest> roommateRequest = roommateRequestRepository.findById(requestId);
 
-        if(optionalRoommate.isEmpty()){
-            Tuple2<ServiceResponse, Optional<Roommate>> Tuple2;
-            return new ResponseTuple<>(ServiceResponse.FAULTY_EMAIL,optionalRoommate,null);
+        if(roommateRequest.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
+
+        RoommateRequest request = roommateRequest.get();
+
+        roommateRequest.get().setAcceptedRequest(0);
+        roommateRequest.get().setAcceptedTimestamp(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC));
+        roommateRequestRepository.save(request);
+
+        return ServiceResponse.SUCCESSFUL;
+    }
+
+    public ServiceResponse adjustRating(String personToRateId, String personWhoIsRatingId, Rating rating){
+        Roommate ratingRoommate;
+        Roommate raterRoommate;
+//        String key = redisService.generateCacheKey(Roommate.class.getName(),personToRateId);
+//        String key1 = redisService.generateCacheKey(Roommate.class.getName(),personWhoIsRatingId);
+        Optional<Object> ratingRoommateOptional =  redisService.retrieveFromCache(redisService.generateCacheKey(Roommate.class.getName(),personToRateId));
+        Optional<Object> raterRoommateOptional =  redisService.retrieveFromCache(redisService.generateCacheKey(Roommate.class.getName(),personWhoIsRatingId));
+
+        if(ratingRoommateOptional.isEmpty()){
+            Optional<Roommate> optionalRoommate = roommateRepository.findById(personToRateId);
+            if(optionalRoommate.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
+            ratingRoommate = optionalRoommate.get();
+        }else{
+            ratingRoommate = (Roommate) ratingRoommateOptional.get();
         }
 
-        if(!encoder.matches(request.getPassword(), optionalRoommate.get().getPassword())){
-            return new ResponseTuple<>(ServiceResponse.FAULTY_PASSWORD,optionalRoommate,null);
+        if(raterRoommateOptional.isEmpty()){
+            Optional<Roommate> roommateOptional = roommateRepository.findById(personWhoIsRatingId);
+            if(roommateOptional.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
+            raterRoommate = roommateOptional.get();
+        }else{
+            raterRoommate = (Roommate) raterRoommateOptional.get();
         }
 
-        String[] keys = apiKeyManagementService.generateAccessAndRefreshToken();
+        ratingRoommate.adjustRating(raterRoommate,rating);
+        roommateRepository.save(ratingRoommate);
+        return ServiceResponse.SUCCESSFUL;
+    }
 
-        return new ResponseTuple<>(ServiceResponse.SUCCESSFUL,optionalRoommate,keys);
+    public ServiceResponse blockRoommate(String userId, String blockingUserId, String reasonForBlocking) {
+        Roommate roommate;
+        Roommate roommateToBeBlocked;
+        Optional<Object> roommateOptional = redisService.retrieveFromCache(redisService.generateCacheKey(Roommate.class.getName(),userId));
+        Optional<Object> blockingRoommateOptional = redisService.retrieveFromCache(redisService.generateCacheKey(Roommate.class.getName(),blockingUserId));
+
+        if(roommateOptional.isEmpty()){
+            Optional<Roommate> optional = roommateRepository.findById(userId);
+            if(optional.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
+            roommate = optional.get();
+        }else{
+            roommate = (Roommate) roommateOptional.get();
+        }
+
+        if(blockingRoommateOptional.isEmpty()){
+            Optional<Roommate> optional = roommateRepository.findById(blockingUserId);
+            if(optional.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
+            roommateToBeBlocked = optional.get();
+        }else{
+            roommateToBeBlocked = (Roommate) blockingRoommateOptional.get();
+        }
+
+        roommate.blockRoommate(roommateToBeBlocked,reasonForBlocking);
+        List<Roommate> roommates = List.of(roommate,roommateToBeBlocked);
+        Map<String,Object> roommateMap = roommates.stream().collect(Collectors.toMap(r -> redisService.generateCacheKey(Roommate.class.getName(),r.getId()),r -> r));
+        redisService.saveAllToCache(roommateMap);
+        return ServiceResponse.SUCCESSFUL;
     }
 
     public ResponseTuple<ServiceResponse,Roommate,Object> getUserProfile(String id) {
-        Optional<Roommate> user = redisRepository.findById(id);
-        Optional<Demographic> demographicOptional = Optional.empty();
-        Optional<Preference> preferenceOptional = Optional.empty();
-        Optional<Location> locationOptional = Optional.empty();
-        Optional<RoommateRequest> roommateRequestOptional = Optional.empty();
-        if(user.isEmpty()){
-            user = roommateRepository.findById(id);
+        Optional<Object> optionalRoommate  = redisService.retrieveFromCache(id);
+        if(optionalRoommate.isEmpty()){
+            Optional<Roommate> user = roommateRepository.findById(id);
             if(user.isEmpty()) return new ResponseTuple<>(ServiceResponse.UNSUCCESSFUL,null,null);
-            redisRepository.save(user.get());
+            redisService.saveToCache(user.get().getId(),user);
+            return new ResponseTuple<>(ServiceResponse.SUCCESSFUL,user.get(),null);
         }
 
-        return new ResponseTuple<>(ServiceResponse.SUCCESSFUL,user.get(),null);
+        return new ResponseTuple<>(ServiceResponse.SUCCESSFUL,(Roommate) optionalRoommate.get(),null);
+    }
+
+    public ServiceResponse incrementViewership(String userId, String viewedUserId) {
+        Roommate roommate;
+        Roommate viewedRoommate;
+
+        Optional<Object> roommateOptional = redisService.retrieveFromCache(Roommate.class.getName()+userId);
+        Optional<Object> viewedRoommateOptional = redisService.retrieveFromCache(Roommate.class.getName()+viewedUserId);
+
+        if(roommateOptional.isEmpty()){
+            Optional<Roommate> optionalRoommateMongo = roommateRepository.findById(userId);
+            if(optionalRoommateMongo.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
+            roommate = optionalRoommateMongo.get();
+
+        }else{
+            roommate = (Roommate) roommateOptional.get();
+        }
+
+        if(viewedRoommateOptional.isEmpty()){
+            Optional<Roommate> viewedRoommateMongo = roommateRepository.findById(viewedUserId);
+            if(viewedRoommateMongo.isEmpty()) return  ServiceResponse.FAULTY_IDENTIFIERS;
+            viewedRoommate = viewedRoommateMongo.get();
+        }else{
+            viewedRoommate = (Roommate) viewedRoommateOptional.get();
+        }
+
+        viewedRoommate.getViewersSet().add(roommate);
+        redisService.saveToCache(viewedRoommate.getId(),viewedRoommate);
+        return ServiceResponse.SUCCESSFUL;
+    }
+
+    public ResponseTuple<ServiceResponse, Optional<Roommate>, String[]> loginUser(LoginRequest request) {
+
+        Optional<Roommate> optionalRoommate = roommateRepository.findByEmail(request.getEmail());
+
+        if(optionalRoommate.isEmpty() || !encoder.matches(request.getPassword(), optionalRoommate.get().getPassword())){
+            Tuple2<ServiceResponse, Optional<Roommate>> Tuple2;
+            return new ResponseTuple<>(ServiceResponse.FAULTY_EMAIL_OR_PASSWORD,optionalRoommate,null);
+        }
+
+        redisService.saveToCache(optionalRoommate.get().getId(),optionalRoommate.get());
+
+        return new ResponseTuple<>(ServiceResponse.SUCCESSFUL,optionalRoommate,apiKeyManagementService.generateAccessAndRefreshToken());
     }
 
     public ServiceResponse requestRoommate(String userId, String requestId, String message) {
-        Optional<Roommate> requestingRoommate = redisRepository.findById(userId);
-        Optional<Roommate> requestedRoommate = redisRepository.findById(requestId);
+        Roommate requestingRoommate;
+        Roommate requestedRoommate;
+        Optional<Object> requestingRoommateOptional = redisService.retrieveFromCache(userId);
+        Optional<Object> requestedRoommateOptional = redisService.retrieveFromCache(requestId);
 
-        if(requestingRoommate.isEmpty()){
-            requestingRoommate = roommateRepository.findById(userId);
-            if(requestingRoommate.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
+        if(requestingRoommateOptional.isEmpty()){
+            Optional<Roommate> optional = roommateRepository.findById(userId);
+            if(optional.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
+            requestingRoommate = optional.get();
+        }else{
+            requestingRoommate = (Roommate) requestingRoommateOptional.get();
         }
 
-        if(requestedRoommate.isEmpty()){
-            requestedRoommate = roommateRepository.findById(requestId);
-            if(requestedRoommate.isEmpty()) return  ServiceResponse.FAULTY_IDENTIFIERS;
+        if(requestedRoommateOptional.isEmpty()){
+            Optional<Roommate> optional = roommateRepository.findById(requestId);
+            if(optional.isEmpty()) return  ServiceResponse.FAULTY_IDENTIFIERS;
+            requestedRoommate = optional.get();
+        }else{
+            requestedRoommate = (Roommate) requestedRoommateOptional.get();
         }
 
-        if(!requestedRoommate.get().isAcceptingCoed()){
-            Demographic demographicOfRequestingRoommate = requestingRoommate.get().getDemographics();
-            Demographic demographicOfRequestedRoommate = requestedRoommate.get().getDemographics();
+        if(!requestedRoommate.isAcceptingCoed()){
+            Demographic demographicOfRequestingRoommate = requestingRoommate.getDemographics();
+            Demographic demographicOfRequestedRoommate = requestedRoommate.getDemographics();
             if(demographicOfRequestedRoommate.getGender() != demographicOfRequestingRoommate.getGender()) return ServiceResponse.GENDER_MISMATCH;
         }
 
         RoommateRequest request = new RoommateRequest();
-        request.setRequestingRoommate(requestingRoommate.get());
-        request.setRequestedRoommate(requestedRoommate.get());
+        request.setRequestingRoommate(requestingRoommate);
+        request.setRequestedRoommate(requestedRoommate);
         if(message != null) request.setMessage(message.trim());
         request.setCreationTimestamp(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC));
 
-        requestingRoommate.get().getRoommateRequests().add(request);
-        requestedRoommate.get().getRoommateRequests().add(request);
+        requestingRoommate.getRoommateRequests().add(request);
+        requestedRoommate.getRoommateRequests().add(request);
 
         roommateRequestRepository.save(request);
-        roommateRepository.saveAll(List.of(requestedRoommate.get(),requestingRoommate.get()));
-        redisRepository.saveAll(List.of(requestedRoommate.get(),requestingRoommate.get()));
+        roommateRepository.saveAll(List.of(requestedRoommate,requestingRoommate));
+        List<Roommate> roommates = List.of(requestedRoommate,requestingRoommate);
+        Map<String,Object> roommateMap = roommates.stream().collect(Collectors.toMap(Roommate::getId, roommate -> roommate));
+        redisService.saveAllToCache(roommateMap);
         return ServiceResponse.SUCCESSFUL;
     }
 
@@ -125,73 +223,11 @@ public class RoommateService {
         roommateRequestRepository.save(request);
         roommateRepository.saveAll(List.of(roommate,requestingRoommate));
 
-        return ServiceResponse.SUCCESSFUL;
-    }
-
-    public ServiceResponse acceptRequest(String requestId) {
-        Optional<RoommateRequest> roommateRequest = roommateRequestRepository.findById(requestId);
-
-        if(roommateRequest.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
-
-        RoommateRequest request = roommateRequest.get();
-
-        roommateRequest.get().setAcceptedRequest(0);
-        roommateRequest.get().setAcceptedTimestamp(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC));
-        roommateRequestRepository.save(request);
+        redisService.flushFromCache(roommate.getId());
+        redisService.flushFromCache(requestingRoommate.getId());
 
         return ServiceResponse.SUCCESSFUL;
     }
 
-    public ServiceResponse incrementViewership(String userId, String viewedUserId) {
-        Optional<Roommate> roommate = redisRepository.findById(userId);
-        Optional<Roommate> viewedRoommate = redisRepository.findById(viewedUserId);
 
-        if(roommate.isEmpty()){
-            roommate = roommateRepository.findById(userId);
-            if(roommate.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
-        }
-
-        if(viewedRoommate.isEmpty()){
-            viewedRoommate = roommateRepository.findById(viewedUserId);
-            if(viewedRoommate.isEmpty()) return  ServiceResponse.FAULTY_IDENTIFIERS;
-        }
-
-        viewedRoommate.get().getViewersSet().add(roommate.get());
-        redisRepository.save(viewedRoommate.get());
-        return ServiceResponse.SUCCESSFUL;
-    }
-
-    public ServiceResponse adjustRating(String personToRateId, String personWhoIsRatingId, Rating rating){
-        Optional<Roommate> ratingRoommateOptional = redisRepository.findById(personToRateId);
-        Optional<Roommate> raterRoommateOptional = redisRepository.findById(personWhoIsRatingId);
-        if(ratingRoommateOptional.isEmpty()){
-            ratingRoommateOptional = roommateRepository.findById(personToRateId);
-            if(ratingRoommateOptional.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
-        }
-        if(raterRoommateOptional.isEmpty()){
-            raterRoommateOptional = roommateRepository.findById(personWhoIsRatingId);
-            if(raterRoommateOptional.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
-        }
-        ratingRoommateOptional.get().adjustRating(raterRoommateOptional.get(),rating);
-        roommateRepository.save(ratingRoommateOptional.get());
-        return ServiceResponse.SUCCESSFUL;
-    }
-
-    public ServiceResponse blockRoommate(String userId, String blockingUserId, String reasonForBlocking) {
-        Optional<Roommate> roommateOptional = redisRepository.findById(userId);
-        Optional<Roommate> blockingRoommateOptional = redisRepository.findById(blockingUserId);
-
-        if(roommateOptional.isEmpty()){
-            roommateOptional = roommateRepository.findById(userId);
-            if(roommateOptional.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
-        }
-
-        if(blockingRoommateOptional.isEmpty()){
-            blockingRoommateOptional = roommateRepository.findById(blockingUserId);
-            if(blockingRoommateOptional.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
-        }
-
-        roommateOptional.get().blockRoommate(blockingRoommateOptional.get(),reasonForBlocking);
-        return ServiceResponse.SUCCESSFUL;
-    }
 }

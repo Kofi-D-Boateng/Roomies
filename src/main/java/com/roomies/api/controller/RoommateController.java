@@ -1,7 +1,9 @@
 package com.roomies.api.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.roomies.api.enums.ServiceResponse;
 import com.roomies.api.enums.Update;
+import com.roomies.api.model.DTO.RoommateDTO;
 import com.roomies.api.model.Roommate;
 import com.roomies.api.service.RoommateService;
 import com.roomies.api.util.custom.ResponseTuple;
@@ -23,13 +25,15 @@ public class RoommateController {
 
     @Autowired
     RoommateService roommateService;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @GetMapping("/secured/profile")
-    public ResponseEntity<Roommate> getUserProfile(@RequestParam("id") String id){
+    public ResponseEntity<Object> getUserProfile(@RequestParam("id") String id){
         if(id == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         ResponseTuple<ServiceResponse,Roommate,Object> response = roommateService.getUserProfile(id);
         if(!response.getVal1().equals(ServiceResponse.SUCCESSFUL)) return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-        return ResponseEntity.status(HttpStatus.OK).body(response.getVal2());
+        RoommateDTO dto = objectMapper.convertValue(response.getVal2(),RoommateDTO.class);
+        return ResponseEntity.status(HttpStatus.OK).body(dto);
     }
 
     @PutMapping("/secured/update")

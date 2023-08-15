@@ -12,6 +12,8 @@ public class RequestContext implements RequestLimitingContext {
     private Long timestamp;
     private Integer attempts;
     private Integer exceededAttempts;
+    private Integer LoginAttempts;
+    private Long blockedTimeStamp;
 
     @Override
     public void incrementAttempts() {
@@ -29,5 +31,15 @@ public class RequestContext implements RequestLimitingContext {
         this.attempts = 1;
         this.exceededAttempts = 0;
         this.timestamp = newTimeStamp;
+    }
+
+    @Override
+    public void incrementLoginAttempts() {
+        this.exceededAttempts++;
+    }
+
+    @Override
+    public void resetBlockedTimeStamp() {
+
     }
 }

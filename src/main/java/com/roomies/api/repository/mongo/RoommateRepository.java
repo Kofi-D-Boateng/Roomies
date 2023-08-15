@@ -9,10 +9,8 @@ import java.util.Optional;
 
 @Repository
 public interface RoommateRepository extends MongoRepository<Roommate, String> {
-
-    @Query("{$or: [{'email': ?0}, {'governmentIdentification': ?1}]}")
+    Optional<Roommate> findByEmail(String email);
     Optional<Roommate> findRoommateByEmailOrSocialSecurityHash(String email,String uniqueIdHash);
-    @Query("{$or: [{'email': ?0}, {'phoneNumber': ?1} ,{'governmentIdentification': ?2}]}")
+    @Query("{ $or: [{ 'email': ?0 }, { 'phone_number': ?1 } ,{ 'social_security': ?2 } ] }")
     Optional<Roommate> findRoommateBy(String email,Long phoneNumber,String uniqueIdHash);
-
 }

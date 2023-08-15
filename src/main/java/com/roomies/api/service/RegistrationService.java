@@ -48,7 +48,7 @@ public class RegistrationService {
 
     public ServiceResponse registerNewUser(RegistrationRequest request) {
         String uniqueIdHash = hashEncoder.encode(request.getGovernmentIdentification());
-        Optional<Roommate> optionalRoommate = roommateRepository.findRoommateByEmailOrSocialSecurityHash(request.getEmail(),uniqueIdHash);
+        Optional<Roommate> optionalRoommate = roommateRepository.findByEmail(request.getEmail());
 
         if(optionalRoommate.isPresent()){
             return ServiceResponse.FAULTY_IDENTIFIERS;
@@ -61,7 +61,7 @@ public class RegistrationService {
         roommate.setPhoneNumber(request.getPhoneNumber());
         roommate.setDateOfBirth(request.getDateOfBirth());
         roommate.setStudent(request.isAStudent());
-        roommate.setVerified(false);
+        roommate.setAuthorized(false);
         generateVerificationTokenAndSendEmail(roommate);
         return ServiceResponse.SUCCESSFUL;
     }
@@ -96,7 +96,7 @@ public class RegistrationService {
             return ServiceResponse.UNSUCCESSFUL;
         }
         validation.setVerifiedAt(currentTimeStamp);
-        roommate.setVerified(true);
+        roommate.setAuthorized(true);
         accountValidationRepository.save(validation);
         roommateRepository.save(roommate);
         log.info("Successfully authenticated user and token. Saving to database....");
