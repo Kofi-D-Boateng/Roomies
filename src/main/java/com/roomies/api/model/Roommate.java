@@ -11,6 +11,7 @@ import com.roomies.api.util.serializers.RoommateRequestSerializer;
 import com.roomies.api.util.serializers.RoommateSetSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.annotation.Id;
@@ -18,7 +19,10 @@ import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+
+import java.io.Serializable;
 import java.util.*;
+
 
 
 @AllArgsConstructor
@@ -27,8 +31,8 @@ import java.util.*;
 @Slf4j
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Document(collection = "roommates")
-public class Roommate {
-
+public class Roommate implements Serializable {
+    private static final long serializableId = 45466425627L;
     @Id
     private String id;
     @Field("oauth_id")
