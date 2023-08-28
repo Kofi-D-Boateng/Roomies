@@ -4,18 +4,16 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.roomies.api.enums.Grade;
-import com.roomies.api.model.*;
+import com.roomies.api.model.roommate.*;
 import com.roomies.api.util.deserializers.RoommateMapKeyDeserializer;
 import com.roomies.api.util.deserializers.RoommateSetDeserializer;
+import com.roomies.api.util.serializers.RatingSerializer;
 import com.roomies.api.util.serializers.RoommateMapSerializer;
 import com.roomies.api.util.serializers.RoommateRequestSerializer;
 import com.roomies.api.util.serializers.RoommateSetSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
-import org.springframework.data.mongodb.core.mapping.DBRef;
-import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +33,7 @@ public class RoommateDTO {
     private String profilePictureHash;
     private String biography;
     private Long availabilityDate;
+    @JsonSerialize(using = RatingSerializer.class)
     private Long rating;
     private boolean acceptingCoed;
     private boolean isStudent;

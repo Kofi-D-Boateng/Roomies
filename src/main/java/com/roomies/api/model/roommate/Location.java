@@ -1,4 +1,4 @@
-package com.roomies.api.model;
+package com.roomies.api.model.roommate;
 
 
 import lombok.*;
@@ -26,6 +26,9 @@ public class Location {
     private String street;
     @Field("apartment_suffix")
     private Object apartmentSuffix;
+    private Double latitude;
+
+    private Double longitude;
 
     @Override
     public String toString() {
@@ -34,10 +37,17 @@ public class Location {
                 ", roommate=" + (roommate != null ? roommate.getId():null) +
                 ", country='" + country + '\'' +
                 ", area='" + area + '\'' +
-                ", areaCode='" + areaCode + '\'' +
-                ", houseNumber=" + houseNumber +
-                ", street='" + street + '\'' +
-                ", apartmentSuffix=" + apartmentSuffix +
                 '}';
+
+//        return "Location{" +
+//                "id='" + id + '\'' +
+//                ", roommate=" + (roommate != null ? roommate.getId():null) +
+//                ", country='" + country + '\'' +
+//                ", area='" + area + '\'' +
+//                ", areaCode='" + areaCode + '\'' +
+//                ", houseNumber=" + houseNumber +
+//                ", street='" + street + '\'' +
+//                ", apartmentSuffix=" + apartmentSuffix +
+//                '}';
     }
 }

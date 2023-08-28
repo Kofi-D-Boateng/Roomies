@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.roomies.api.enums.ServiceResponse;
 import com.roomies.api.enums.Update;
 import com.roomies.api.model.DTO.RoommateDTO;
-import com.roomies.api.model.Roommate;
+import com.roomies.api.model.roommate.Roommate;
 import com.roomies.api.service.RoommateService;
 import com.roomies.api.util.custom.ResponseTuple;
 import lombok.AllArgsConstructor;

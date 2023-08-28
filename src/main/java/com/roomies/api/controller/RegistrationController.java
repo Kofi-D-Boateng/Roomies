@@ -1,9 +1,8 @@
 package com.roomies.api.controller;
 
 
-import com.roomies.api.enums.OAuth;
 import com.roomies.api.enums.ServiceResponse;
-import com.roomies.api.model.RegistrationRequest;
+import com.roomies.api.model.request.RegistrationRequest;
 import com.roomies.api.service.RegistrationService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;

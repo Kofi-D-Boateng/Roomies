@@ -1,6 +1,6 @@
 package com.roomies.api.model.session;
 
-import com.roomies.api.interfaces.RequestLimitingContext;
+import com.roomies.api.model.session.interfaces.RequestLimitingContext;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -1,4 +1,4 @@
-package com.roomies.api.model;
+package com.roomies.api.model.roommate;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;

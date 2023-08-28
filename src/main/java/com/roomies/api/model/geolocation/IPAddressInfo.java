@@ -1,7 +1,7 @@
 package com.roomies.api.model.geolocation;
 
 import com.google.gson.annotations.SerializedName;
-import com.roomies.api.model.Roommate;
+import com.roomies.api.model.roommate.Roommate;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

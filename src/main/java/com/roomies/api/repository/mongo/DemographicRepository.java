@@ -1,6 +1,6 @@
 package com.roomies.api.repository.mongo;
 
-import com.roomies.api.model.Demographic;
+import com.roomies.api.model.roommate.Demographic;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 

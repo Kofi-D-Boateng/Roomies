@@ -1,4 +1,4 @@
-package com.roomies.api.model;
+package com.roomies.api.model.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

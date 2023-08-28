@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.roomies.api.model.DTO.RoommateRequestDTO;
-import com.roomies.api.model.RoommateRequest;
+import com.roomies.api.model.roommate.RoommateRequest;
 
 import java.io.IOException;
 import java.util.Set;

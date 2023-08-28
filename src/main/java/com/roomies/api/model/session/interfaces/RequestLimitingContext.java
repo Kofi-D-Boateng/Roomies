@@ -1,4 +1,4 @@
-package com.roomies.api.interfaces;
+package com.roomies.api.model.session.interfaces;
 
 public interface RequestLimitingContext {
     void incrementAttempts();

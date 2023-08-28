@@ -1,17 +1,15 @@
 package com.roomies.api.service;
 
 import com.roomies.api.enums.RateLimitStatus;
-import com.roomies.api.interfaces.Limiter;
+import com.roomies.api.service.interfaces.Limiter;
 import com.roomies.api.model.geolocation.IPAddressInfo;
 import com.roomies.api.model.session.RequestContext;
 import com.roomies.api.repository.mongo.IPAddressInfoRepository;
 import com.roomies.api.util.Utils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

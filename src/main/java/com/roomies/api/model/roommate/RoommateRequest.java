@@ -1,7 +1,5 @@
-package com.roomies.api.model;
+package com.roomies.api.model.roommate;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
@@ -13,7 +11,6 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @NoArgsConstructor
 @Getter
 @Setter
-@JsonIdentityInfo(generator= ObjectIdGenerators.PropertyGenerator.class, property="id")
 @Document(collection = "request")
 public class RoommateRequest {
     @Id
