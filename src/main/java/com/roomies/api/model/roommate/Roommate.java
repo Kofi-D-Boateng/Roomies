@@ -1,4 +1,4 @@
-package com.roomies.api.model;
+package com.roomies.api.model.roommate;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -11,7 +11,6 @@ import com.roomies.api.util.serializers.RoommateRequestSerializer;
 import com.roomies.api.util.serializers.RoommateSetSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.annotation.Id;

@@ -1,10 +1,8 @@
 package com.roomies.api.service;
 
-import com.google.gson.Gson;
 import com.roomies.api.enums.MFARequest;
 import com.roomies.api.enums.OAuth;
 import com.roomies.api.enums.ServiceResponse;
-import com.roomies.api.model.Roommate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;

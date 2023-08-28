@@ -1,6 +1,7 @@
 package com.roomies.api.model;
 
 
+import com.roomies.api.model.roommate.Roommate;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -1,4 +1,4 @@
-package com.roomies.api.model;
+package com.roomies.api.model.request;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.roomies.api.util.deserializers.DateMillisecondDeserializer;

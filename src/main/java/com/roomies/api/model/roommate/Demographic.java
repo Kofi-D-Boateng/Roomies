@@ -1,7 +1,5 @@
-package com.roomies.api.model;
+package com.roomies.api.model.roommate;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.roomies.api.enums.Gender;
 import com.roomies.api.enums.Grade;

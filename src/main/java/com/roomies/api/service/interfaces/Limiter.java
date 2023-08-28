@@ -1,4 +1,4 @@
-package com.roomies.api.interfaces;
+package com.roomies.api.service.interfaces;
 
 import com.roomies.api.enums.RateLimitStatus;
 import jakarta.servlet.http.HttpServletRequest;

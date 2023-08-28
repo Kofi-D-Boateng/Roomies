@@ -2,7 +2,7 @@ package com.roomies.api.util.deserializers;
 
 import com.fasterxml.jackson.databind.*;
 import com.roomies.api.model.DTO.MaskedRoommateDTO;
-import com.roomies.api.model.Roommate;
+import com.roomies.api.model.roommate.Roommate;
 
 
 import java.io.IOException;
