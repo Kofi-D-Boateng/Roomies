@@ -89,9 +89,11 @@ public class SearchService {
         Set<MaskedRoommateDTO> maskedRoommateDTOSet;
         Optional<Object> optional = redisService.retrieveFromCache(key);
         if(optional.isPresent()){
-            List<Roommate> list = objectMapper.convertValue(optional.get(), new TypeReference<List<Roommate>>() {});
-            maskedRoommateDTOSet = list.stream().map(roommate -> objectMapper.convertValue(roommate, MaskedRoommateDTO.class)).collect(Collectors.toSet());
+
+            Set<MaskedRoommateDTO> list = objectMapper.convertValue(optional.get(), new TypeReference<Set<MaskedRoommateDTO>>() {});
+            return new ResponseTuple<>(ServiceResponse.SUCCESSFUL,list,null);
         }else{
+
             /**
              * STEP ONE: CHECK ADDRESS TRIE FOR COORDS
              * STEP TWO: IF COORDS ARE NOT THERE USE GOOGLE API TO GET FORMATTED ADDRESS AND COORDINATES THEN ADD TO TRIE
@@ -111,10 +113,10 @@ public class SearchService {
                 if(!result.getStatus().equals(GoogleStatus.OK.getValue())) return new ResponseTuple<>(ServiceResponse.UNSUCCESSFUL,null,null);
                 com.roomies.api.util.external.google.results.Location locationCoord = results.get(0).getGeometry().getLocation();
                 List<AddressComponent> addressComponents = results.get(0).getAddressComponent();
-                locale = addressComponents.get(addressComponents.size()-2).getShortName();
-                lat = locationCoord.getLat();
-                lon = locationCoord.getLng();
                 String parsedAddress = buildSearchableString(results.get(0).getFormattedAddress().split(","));
+                locale = addressComponents.get(addressComponents.size()-3).getShortName();
+                lat = locationCoord.getLatitude();
+                lon = locationCoord.getLongitude();
                 if(addressTrie.containsPrefix(parsedAddress)) addressTrie.updateNode(parsedAddress,lat,lon);
                 addressTrie.insert(parsedAddress,lat,lon,locale);
             }else{
@@ -124,6 +126,7 @@ public class SearchService {
             }
 
             double[] latLngCoords = generateBoxBoundaries(lat, lon, request.getDistance(), Objects.equals(locale, "US") ? Unit.IMPERIAL:Unit.METRIC);
+            log.info("Box Coords: {}",latLngCoords);
             Optional<List<Location>> locationOptional = locationRepository.findLocationsWithinRange(latLngCoords[0],latLngCoords[1],latLngCoords[2],latLngCoords[3]);
 
             if(locationOptional.isEmpty()) return new ResponseTuple<>(ServiceResponse.UNSUCCESSFUL,null,null);
@@ -134,14 +137,13 @@ public class SearchService {
                     .map(location -> objectMapper.convertValue(location.getRoommate(), MaskedRoommateDTO.class))
                     .collect(Collectors.toSet());
         }
+
         ResponseTuple<ServiceResponse,Set<MaskedRoommateDTO>,Object> responseTuple = new ResponseTuple<>(ServiceResponse.SUCCESSFUL,maskedRoommateDTOSet,null);
         redisService.saveToCache(key,maskedRoommateDTOSet,MAXIMUM_QUERY_LIFETIME);
         return responseTuple;
-
     }
 
     /**
-     *
      * @param latitude Latitude of location
      * @param longitude  Longitude of location
      * @param distance  The maximum distance the user can be within the box
@@ -157,13 +159,10 @@ public class SearchService {
         double minLon = longitude - lonOffset;
         double maxLon = longitude + lonOffset;
 
-
-
         return new double[]{minLat,maxLat,minLon,maxLon};
     }
 
     /**
-     *
      * @param latitude Latitude of a user's location
      * @param longitude Longitude of a user's location
      * @param latitude1 Latitude of google-searched location
@@ -195,7 +194,13 @@ public class SearchService {
         log.info("Building String from parts {}",Arrays.toString(stringParts));
         StringBuilder builder = new StringBuilder();
         for (String part:stringParts) {
-            builder.append(part.trim());
+            String p;
+            if(part.contains(",")){
+                p = part.substring(0,part.trim().length()-1);
+            }else{
+                p = part.trim();
+            }
+            builder.append(p);
             builder.append(" ");
         }
         String s = builder.toString();

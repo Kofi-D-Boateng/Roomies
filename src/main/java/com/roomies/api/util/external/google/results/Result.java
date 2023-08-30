@@ -12,10 +12,12 @@ import java.util.List;
 @NoArgsConstructor
 @Data
 public class Result {
-    @JsonProperty("address_component")
+    @JsonProperty("address_components")
     private List<AddressComponent> AddressComponent;
     @JsonProperty("formatted_address")
     private String formattedAddress;
     private Geometry geometry;
+    @JsonProperty("place_id")
+    private String placeId;
     private List<String> types;
 }

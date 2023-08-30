@@ -44,7 +44,7 @@ class RoommateServiceTest {
     @Mock
     RoommateRepository roommateRepository;
     @Mock
-    RoommateRedisRepository roommateRedisRepository;
+    RedisService redisService;
     @Mock
     RoommateRequestRepository roommateRequestRepository;
     @Mock
@@ -86,6 +86,7 @@ class RoommateServiceTest {
         when(roommateRepository.findRoommateBy(request.getEmail(),request.getPhoneNumber(),null)).thenReturn(Optional.of(roommate));
         when(bCryptPasswordEncoder.matches(request.getPassword(),roommate.getPassword())).thenReturn(Objects.equals(request.getPassword(), roommate.getPassword()));
         when(apiKeyManagementService.generateAccessAndRefreshToken()).thenReturn(new String[]{UUID.randomUUID().toString(),UUID.randomUUID().toString()});
+//        when(redisService.redisTemplate.opsForValue().set(roommate.getId(),roommate,60L)).thenReturn(null);
 
         ResponseTuple<ServiceResponse,Optional<Roommate>,String[]> responseTuple = roommateService.loginUser(request);
         assertNotNull(responseTuple.getVal1());

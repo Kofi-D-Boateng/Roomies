@@ -1,5 +1,6 @@
 package com.roomies.api.util.external.google.results;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,6 +10,7 @@ import lombok.NoArgsConstructor;
 @Data
 public class Geometry {
     private Location location;
-    private String location_type;
+    @JsonProperty("location_type")
+    private String LocationType;
     private Viewport viewport;
 }

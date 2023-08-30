@@ -1,9 +1,13 @@
 package com.roomies.api.model.roommate;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.roomies.api.enums.Grade;
 import com.roomies.api.enums.Rating;
+import com.roomies.api.enums.Update;
 import com.roomies.api.util.deserializers.RoommateMapKeyDeserializer;
 import com.roomies.api.util.deserializers.RoommateSetDeserializer;
 import com.roomies.api.util.serializers.RoommateMapSerializer;
@@ -13,6 +17,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -21,7 +26,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.io.Serializable;
 import java.util.*;
-
+import java.util.stream.Collectors;
 
 
 @AllArgsConstructor
@@ -30,7 +35,7 @@ import java.util.*;
 @Slf4j
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Document(collection = "roommates")
-public class Roommate implements Serializable {
+public class Roommate implements RoommateOperations, Serializable  {
     private static final long serializableId = 45466425627L;
     @Id
     private String id;
@@ -95,6 +100,7 @@ public class Roommate implements Serializable {
     private Set<Roommate> raterSet = new HashSet<>();
     private Set<String> tags = new HashSet<>();
 
+
     public void adjustRating(Roommate rater, Rating rating){
         if(this.raterSet.contains(rater)) return;
         if(rating == Rating.UP){
@@ -105,19 +111,44 @@ public class Roommate implements Serializable {
         this.raterSet.add(rater);
     }
 
+    public void addTag(String tag){this.tags.add(tag);}
+
     public void blockRoommate(Roommate blockingRoommate, String reason){
         if(this.blockedRoommates.containsKey(blockingRoommate) || blockingRoommate == this) return;
         log.info("{} is blocking roommate with id: {}",this.id,blockingRoommate.getId());
         this.blockedRoommates.putIfAbsent(blockingRoommate,reason);
     }
 
-    public void addTag(String tag){
-        if(this.tags.contains(tag)) return;
-        this.tags.add(tag);
+    public void increaseViewership(Roommate viewer){this.viewersSet.add(viewer);}
+
+    public void updateRoommate(Map<Update,Object> updateObjectMap, ObjectMapper objectMapper){
+        Map<Update,Object> checkedMap = checkViolations(updateObjectMap);
+        checkedMap.entrySet().stream().parallel().forEach(entry -> {
+            Update key = entry.getKey();
+            switch (key) {
+                case FIRST_NAME -> setFirstName((String) entry.getValue());
+                case MIDDLE_NAME -> setMiddleName((String) entry.getValue());
+                case LAST_NAME -> setLastName((String) entry.getValue());
+                case PHONE_NUMBER -> setPhoneNumber((Long) entry.getValue());
+                case BIOGRAPHY -> setBiography((String) entry.getValue());
+                case STUDENT_STATUS -> setStudent((Boolean) entry.getValue());
+                case UNIVERSITY -> demographics.setUniversityName((String) entry.getValue());
+                case MAJOR -> demographics.setMajor((String) entry.getValue());
+                case SCHOOL_GRADE -> demographics.setSchoolGrade((Grade) entry.getValue());
+                case COUNTRY -> location.setCountry((String) entry.getValue());
+                case AREA -> location.setArea((String) entry.getValue());
+                case AREA_CODE -> location.setAreaCode((String) entry.getValue());
+                case ADDRESS -> location.setStreet((String) entry.getValue());
+                case PREFERENCE -> {
+                    Map<String,Object> newPreferences = objectMapper.convertValue(entry.getValue(), new TypeReference<Map<String, Object>>() {});
+                    preference.getPreferences().putAll(newPreferences);
+                }
+                default -> log.warn("No values where found in the map provided");
+            }
+        });
     }
 
-    public void increaseViewership(Roommate viewer){
-        if(this.viewersSet.contains(viewer) || viewer == this) return;
-        this.viewersSet.add(viewer);
+    private Map<Update,Object> checkViolations(Map<Update,Object> updateObjectMap) {
+        return updateObjectMap.entrySet().stream().parallel().filter(entry -> entry.getValue() != null).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }

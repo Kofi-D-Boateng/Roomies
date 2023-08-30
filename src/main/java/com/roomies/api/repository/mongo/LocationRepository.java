@@ -11,6 +11,6 @@ import java.util.Optional;
 @Repository
 public interface LocationRepository extends MongoRepository<Location,String> {
 
-    @Query("{ $or: [ {'latitude': {'$gte': ?0, '$lte': ?1}, {'longitude': {'$gte': ?2, '$lte': ?3} ] }")
+    @Query("{ $and: [ { 'latitude': { $gte: ?0, $lte: ?1 } }, { 'longitude': { $gte: ?2, $lte: ?3 } } ] }")
     Optional<List<Location>> findLocationsWithinRange(double minLat, double maxLat, double minLon, double maxLon);
 }
