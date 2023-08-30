@@ -43,8 +43,8 @@ public class RedisService implements Operations {
         log.info("Retrieving roommate class for key: {}",key);
         Object redisObject = redisTemplate.opsForValue().get(key);
         if(redisObject != null){
-            log.info("Object retrieved: {}",redisObject);
-            return Optional.of((Roommate) redisObject);
+            log.info("Object retrieved for key: {}",key);
+            return Optional.of(redisObject);
         }
         log.warn("Roommate not found for key: {}",key);
         return Optional.empty();

@@ -76,10 +76,10 @@ public class GoogleMaps implements GoogleMap {
 
         Request request = new Request.Builder().url(url).build();
         try(Response response = client.newCall(request).execute()){
-            if(!response.isSuccessful()){
-                String advice = "CHECK ERROR HANDLING ON GOOGLE MAPS PAGE";
+            if(response.isSuccessful() && response.body() != null){
+                return googleParser.parseGeocodeResults(response.body().byteStream());
             }
-            return googleParser.parseGeocodeResults(response.body().byteStream());
+            return null;
         }catch (IOException e){
             log.trace("There was an error with the request to google's api...");
             return null;
@@ -104,10 +104,10 @@ public class GoogleMaps implements GoogleMap {
 
         Request request = new Request.Builder().url(url).get().build();
         try(Response response = client.newCall(request).execute()){
-            if(!response.isSuccessful()){
-                String advice = "CHECK ERROR HANDLING ON GOOGLE MAPS PAGE";
+            if(response.isSuccessful() && response.body() != null){
+                return googleParser.parseGeocodeResults(response.body().byteStream());
             }
-            return googleParser.parseGeocodeResults(response.body().byteStream());
+            return null;
         }catch (IOException e){
             log.trace("There was an error with the request to google's api...");
             return null;
@@ -128,7 +128,7 @@ public class GoogleMaps implements GoogleMap {
                 .addQueryParameter("types","geocode")
                 .addQueryParameter("key",GOOGLE_API_KEY.trim())
                 .build();
-//        log.info("Google endpoint: {}",url.toString());
+        log.info("Google endpoint: {}",url.toString());
         Request request = new Request.Builder().url(url).get().build();
         try(Response response = client.newCall(request).execute()) {
             if(response.isSuccessful() && response.body() != null){

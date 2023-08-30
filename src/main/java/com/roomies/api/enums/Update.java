@@ -10,12 +10,11 @@ public enum Update {
     UNIVERSITY("University"),
     MAJOR("Major"),
     SCHOOL_GRADE("School Grade"),
-    LOCATION("Location"),
     COUNTRY("Country"),
     AREA("Area"),
     AREA_CODE("Area Code"),
     ADDRESS("Address"),
-    DEMOGRAPHICS("Demographics"),
+    HOUSE_NUMBER("House Number"),
     PREFERENCE("Preference");
 
     private final String value;

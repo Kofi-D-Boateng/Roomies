@@ -1,7 +1,9 @@
 package com.roomies.api.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.roomies.api.enums.Rating;
 import com.roomies.api.enums.ServiceResponse;
+import com.roomies.api.enums.Update;
 import com.roomies.api.model.request.LoginRequest;
 import com.roomies.api.model.roommate.Demographic;
 import com.roomies.api.model.roommate.Roommate;
@@ -10,7 +12,9 @@ import com.roomies.api.repository.mongo.RoommateRepository;
 import com.roomies.api.repository.mongo.RoommateRequestRepository;
 import com.roomies.api.util.custom.ResponseTuple;
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,6 +30,8 @@ import java.util.stream.Collectors;
 
 @Service
 @AllArgsConstructor
+@NoArgsConstructor
+@Slf4j
 public class RoommateService {
     private static final long DURATION = 60L;
     @Autowired
@@ -38,6 +44,8 @@ public class RoommateService {
     ApiKeyManagementService apiKeyManagementService;
     @Autowired
     BCryptPasswordEncoder encoder;
+    @Autowired
+    ObjectMapper objectMapper;
 
     public ServiceResponse acceptRequest(@NonNull String requestId) {
         Optional<RoommateRequest> roommateRequest = roommateRequestRepository.findById(requestId);
@@ -85,12 +93,15 @@ public class RoommateService {
     public ServiceResponse blockRoommate(@NonNull String userId, @NonNull String blockingUserId, String reasonForBlocking) {
         Roommate roommate;
         Roommate roommateToBeBlocked;
-        Optional<Object> roommateOptional = redisService.retrieveFromCache(redisService.generateCacheKey(Roommate.class.getName(),userId));
-        Optional<Object> blockingRoommateOptional = redisService.retrieveFromCache(redisService.generateCacheKey(Roommate.class.getName(),blockingUserId));
+        Optional<Object> roommateOptional = redisService.retrieveFromCache(userId);
+        Optional<Object> blockingRoommateOptional = redisService.retrieveFromCache(blockingUserId);
 
         if(roommateOptional.isEmpty()){
             Optional<Roommate> optional = roommateRepository.findById(userId);
-            if(optional.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
+            if(optional.isEmpty()){
+                log.warn("Could not find user with id: {} in redis or mongo...",userId);
+                return ServiceResponse.FAULTY_IDENTIFIERS;
+            }
             roommate = optional.get();
         }else{
             roommate = (Roommate) roommateOptional.get();
@@ -98,7 +109,10 @@ public class RoommateService {
 
         if(blockingRoommateOptional.isEmpty()){
             Optional<Roommate> optional = roommateRepository.findById(blockingUserId);
-            if(optional.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
+            if(optional.isEmpty()){
+                log.warn("Could not find user with id: {} in redis or mongo...",userId);
+                return ServiceResponse.FAULTY_IDENTIFIERS;
+            }
             roommateToBeBlocked = optional.get();
         }else{
             roommateToBeBlocked = (Roommate) blockingRoommateOptional.get();
@@ -106,7 +120,7 @@ public class RoommateService {
 
         roommate.blockRoommate(roommateToBeBlocked,reasonForBlocking);
         List<Roommate> roommates = List.of(roommate,roommateToBeBlocked);
-        Map<String,Object> roommateMap = roommates.stream().collect(Collectors.toMap(r -> redisService.generateCacheKey(Roommate.class.getName(),r.getId()),r -> r));
+        Map<String,Object> roommateMap = roommates.stream().collect(Collectors.toMap(Roommate::getId, r -> r));
         redisService.saveAllToCache(roommateMap,DURATION);
         return ServiceResponse.SUCCESSFUL;
     }
@@ -115,7 +129,10 @@ public class RoommateService {
         Optional<Object> optionalRoommate  = redisService.retrieveFromCache(id);
         if(optionalRoommate.isEmpty()){
             Optional<Roommate> user = roommateRepository.findById(id);
-            if(user.isEmpty()) return new ResponseTuple<>(ServiceResponse.UNSUCCESSFUL,null,null);
+            if(user.isEmpty()){
+                log.warn("Could not find user with id: {} in redis or mongo...",id);
+                return new ResponseTuple<>(ServiceResponse.UNSUCCESSFUL,null,null);
+            }
             redisService.saveToCache(user.get().getId(),user,DURATION);
             return new ResponseTuple<>(ServiceResponse.SUCCESSFUL,user.get(),null);
         }
@@ -127,12 +144,15 @@ public class RoommateService {
         Roommate roommate;
         Roommate viewedRoommate;
 
-        Optional<Object> roommateOptional = redisService.retrieveFromCache(Roommate.class.getName()+userId);
-        Optional<Object> viewedRoommateOptional = redisService.retrieveFromCache(Roommate.class.getName()+viewedUserId);
+        Optional<Object> roommateOptional = redisService.retrieveFromCache(userId);
+        Optional<Object> viewedRoommateOptional = redisService.retrieveFromCache(viewedUserId);
 
         if(roommateOptional.isEmpty()){
             Optional<Roommate> optionalRoommateMongo = roommateRepository.findById(userId);
-            if(optionalRoommateMongo.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
+            if(optionalRoommateMongo.isEmpty()){
+                log.warn("Could not find user with id: {} in redis or mongo...",userId);
+                return ServiceResponse.FAULTY_IDENTIFIERS;
+            }
             roommate = optionalRoommateMongo.get();
 
         }else{
@@ -141,7 +161,10 @@ public class RoommateService {
 
         if(viewedRoommateOptional.isEmpty()){
             Optional<Roommate> viewedRoommateMongo = roommateRepository.findById(viewedUserId);
-            if(viewedRoommateMongo.isEmpty()) return  ServiceResponse.FAULTY_IDENTIFIERS;
+            if(viewedRoommateMongo.isEmpty()){
+                log.warn("Could not find viewerUserId with id: {} in redis or mongo...",viewedUserId);
+                return  ServiceResponse.FAULTY_IDENTIFIERS;
+            }
             viewedRoommate = viewedRoommateMongo.get();
         }else{
             viewedRoommate = (Roommate) viewedRoommateOptional.get();
@@ -157,7 +180,6 @@ public class RoommateService {
         Optional<Roommate> optionalRoommate = roommateRepository.findByEmail(request.getEmail());
 
         if(optionalRoommate.isEmpty() || !encoder.matches(request.getPassword(), optionalRoommate.get().getPassword())){
-            Tuple2<ServiceResponse, Optional<Roommate>> Tuple2;
             return new ResponseTuple<>(ServiceResponse.FAULTY_EMAIL_OR_PASSWORD,optionalRoommate,null);
         }
 
@@ -174,7 +196,10 @@ public class RoommateService {
 
         if(requestingRoommateOptional.isEmpty()){
             Optional<Roommate> optional = roommateRepository.findById(userId);
-            if(optional.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
+            if(optional.isEmpty()) {
+                log.trace("Could not find user with id: {} in redis or mongo...",userId);
+                return ServiceResponse.FAULTY_IDENTIFIERS;
+            }
             requestingRoommate = optional.get();
         }else{
             requestingRoommate = (Roommate) requestingRoommateOptional.get();
@@ -182,7 +207,10 @@ public class RoommateService {
 
         if(requestedRoommateOptional.isEmpty()){
             Optional<Roommate> optional = roommateRepository.findById(requestId);
-            if(optional.isEmpty()) return  ServiceResponse.FAULTY_IDENTIFIERS;
+            if(optional.isEmpty()){
+                log.trace("Could not find user with id: {} in redis or mongo...",requestId);
+                return  ServiceResponse.FAULTY_IDENTIFIERS;
+            }
             requestedRoommate = optional.get();
         }else{
             requestedRoommate = (Roommate) requestedRoommateOptional.get();
@@ -214,7 +242,10 @@ public class RoommateService {
     public ServiceResponse removeRequest(@NonNull String requestId) {
         Optional<RoommateRequest> roommateRequest = roommateRequestRepository.findById(requestId);
 
-        if(roommateRequest.isEmpty()) return ServiceResponse.FAULTY_IDENTIFIERS;
+        if(roommateRequest.isEmpty()){
+            log.trace("Could not find roommate request with id: {} in redis or mongo...",requestId);
+            return ServiceResponse.FAULTY_IDENTIFIERS;
+        }
 
         RoommateRequest request = roommateRequest.get();
         Roommate requestingRoommate = request.getRequestingRoommate();
@@ -234,5 +265,24 @@ public class RoommateService {
         return ServiceResponse.SUCCESSFUL;
     }
 
+    public ServiceResponse updateUserProfile(@NonNull String id, @NonNull Map<Update,Object> updateObjectMap){
+        Roommate roommate;
+        Optional<Object> redisOptional = redisService.retrieveFromCache(id);
+        if(redisOptional.isEmpty()){
+            Optional<Roommate> mongoOptional = roommateRepository.findById(id);
+            if(mongoOptional.isEmpty()){
+                log.trace("Could not find user with id: {} in redis or mongo...",id);
+                return  ServiceResponse.FAULTY_IDENTIFIERS;
+            }
+            roommate = mongoOptional.get();
+        }else{
+            roommate = (Roommate) redisOptional.get();
+        }
+
+        roommate.updateRoommate(updateObjectMap,objectMapper);
+        roommateRepository.save(roommate);
+        redisService.saveToCache(id,roommate,DURATION);
+        return ServiceResponse.SUCCESSFUL;
+    }
 
 }

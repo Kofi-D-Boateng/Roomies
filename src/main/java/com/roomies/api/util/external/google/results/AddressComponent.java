@@ -14,7 +14,7 @@ public class AddressComponent {
 
     @JsonProperty("long_name")
     private String longName;
-    @JsonProperty("long_name")
+    @JsonProperty("short_name")
     private String shortName;
     private List<String> types;
 }

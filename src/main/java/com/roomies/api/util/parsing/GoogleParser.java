@@ -44,7 +44,7 @@ public class GoogleParser implements GParser {
         try {
             return objectMapper.readValue(inputStream, GeocodingResult.class);
         }catch (IOException e){
-            log.trace("Error trying to convert stream into {}",GeocodingResult.class.getName());
+            log.warn("Error trying to convert stream into {}\nError: {}",GeocodingResult.class.getName(),e);
             return null;
         }
     }
