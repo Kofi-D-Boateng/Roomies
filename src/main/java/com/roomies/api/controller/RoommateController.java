@@ -51,7 +51,7 @@ public class RoommateController {
         return ResponseEntity.status(HttpStatus.OK).body(null);
     }
 
-    @PostMapping("/secured/roommate-request")
+    @PostMapping("/secured/request")
     public ResponseEntity<Object> requestRoommate(@RequestParam("id") String userId, @RequestParam("requestUserId") String requestUserId,@RequestBody String message){
         if(userId == null || requestUserId == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         ServiceResponse response = roommateService.requestRoommate(userId,requestUserId,message);
@@ -59,7 +59,7 @@ public class RoommateController {
         return ResponseEntity.status(HttpStatus.OK).body(null);
     }
 
-    @PutMapping("/secured/accept-request")
+    @PutMapping("/secured/request/accept")
     public ResponseEntity<Object> acceptRequest(@RequestParam("requestId") String requestId){
         if(requestId == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         ServiceResponse response = roommateService.acceptRequest(requestId);
@@ -67,15 +67,15 @@ public class RoommateController {
         return ResponseEntity.status(HttpStatus.OK).body(null);
     }
 
-    @DeleteMapping("/secured/remove-request")
-    public ResponseEntity<Object> removeRequest(@RequestParam("requestId") String requestId){
+    @DeleteMapping("/secured/request/decline")
+    public ResponseEntity<Object> declineRequest(@RequestParam("requestId") String requestId){
         if(requestId == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         ServiceResponse response = roommateService.removeRequest(requestId);
         if(!response.equals(ServiceResponse.SUCCESSFUL)) return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(null);
         return ResponseEntity.status(HttpStatus.OK).body(null);
     }
 
-    @PutMapping("/secured/viewership")
+    @PutMapping("/secured/viewership/increase")
     public ResponseEntity<Object> increaseViewerShip(@RequestParam("userId") String userId, @RequestParam("viewedUserId") String viewedUserId){
         if(userId == null || viewedUserId == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         ServiceResponse response = roommateService.incrementViewership(userId,viewedUserId);
@@ -83,7 +83,7 @@ public class RoommateController {
         return ResponseEntity.status(HttpStatus.OK).body(null);
     }
 
-    @PutMapping("/secured/block-roommate")
+    @PutMapping("/secured/block")
     public ResponseEntity<Object> blockRoommate(@RequestParam("userId") String userId, @RequestParam("blockingUserId") String blockingUserId, @RequestBody String reasonForBlocking){
         if(userId == null || blockingUserId == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         ServiceResponse response = roommateService.blockRoommate(userId,blockingUserId, reasonForBlocking);
