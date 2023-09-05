@@ -1,22 +1,28 @@
 package com.roomies.api.model.roommate;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.io.Serializable;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
 @Document(collection = "location")
-public class Location {
+public class Location implements Serializable {
+    private static final long serializableId = 65466425627L;
     @Id
     private String id;
     @DBRef
-    private Roommate roommate;
+    @JsonIgnore
+    private transient Roommate roommate;
     private String country;
     private String area;
     @Field("area_code")

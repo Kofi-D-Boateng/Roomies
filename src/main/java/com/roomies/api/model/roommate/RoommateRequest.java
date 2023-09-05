@@ -1,10 +1,17 @@
 package com.roomies.api.model.roommate;
 
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.roomies.api.util.serializers.MaskedRoommateSerializer;
+import jakarta.annotation.PostConstruct;
 import lombok.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
+
+import java.io.Serializable;
 
 
 @AllArgsConstructor
@@ -12,7 +19,9 @@ import org.springframework.data.mongodb.core.mapping.Field;
 @Getter
 @Setter
 @Document(collection = "request")
-public class RoommateRequest {
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class RoommateRequest implements Serializable {
+    private static final long serializeId = -622365302L;
     @Id
     private String id;
     @DBRef

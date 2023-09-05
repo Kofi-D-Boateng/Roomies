@@ -4,9 +4,11 @@ import com.google.gson.Gson;
 import com.roomies.api.enums.ServiceResponse;
 import com.roomies.api.model.AccountValidation;
 import com.roomies.api.model.request.RegistrationRequest;
+import com.roomies.api.model.roommate.Demographic;
+import com.roomies.api.model.roommate.Location;
+import com.roomies.api.model.roommate.Preference;
 import com.roomies.api.model.roommate.Roommate;
-import com.roomies.api.repository.mongo.AccountValidationRepository;
-import com.roomies.api.repository.mongo.RoommateRepository;
+import com.roomies.api.repository.mongo.*;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +31,12 @@ public class RegistrationService {
 
     @Autowired
     RoommateRepository roommateRepository;
+    @Autowired
+    DemographicRepository demographicRepository;
+    @Autowired
+    LocationRepository locationRepository;
+    @Autowired
+    PreferenceRepository preferenceRepository;
     @Autowired
     AccountValidationRepository accountValidationRepository;
     @Autowired
@@ -62,6 +70,9 @@ public class RegistrationService {
         roommate.setDateOfBirth(request.getDateOfBirth());
         roommate.setStudent(request.isAStudent());
         roommate.setAuthorized(false);
+        roommate.setMfaActive(false);
+
+
         generateVerificationTokenAndSendEmail(roommate);
         return ServiceResponse.SUCCESSFUL;
     }
@@ -75,8 +86,22 @@ public class RegistrationService {
         validation.setVerificationToken(token);
         validation.setValidFor(LocalDateTime.now().plusMinutes(VALIDATION_PERIOD).toEpochSecond(ZoneOffset.UTC));
 
+        demographicRepository.save(roommate.getDemographics());
+        locationRepository.save(roommate.getLocation());
+        preferenceRepository.save(roommate.getPreference());
         roommateRepository.save(roommate);
         accountValidationRepository.save(validation);
+
+        Preference preference = roommate.getPreference();
+        Demographic demographic = roommate.getDemographics();
+        Location location = roommate.getLocation();
+        preference.setRoommate(roommate);
+        demographic.setRoommate(roommate);
+        location.setRoommate(roommate);
+        demographicRepository.save(roommate.getDemographics());
+        locationRepository.save(roommate.getLocation());
+        preferenceRepository.save(roommate.getPreference());
+
         log.info("Saved New User {} and generated token {} to database... Sending token to be emailed for verification",roommate.getEmail(),token);
         kafkaTemplate.send(EMAIL_VERIFICATION_TOPIC,gson.toJson(new Message(token,VALIDATION_PERIOD)));
         log.info("Successfully sent token to {} channel to for registration",EMAIL_VERIFICATION_TOPIC);

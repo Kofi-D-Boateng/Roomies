@@ -1,5 +1,7 @@
 package com.roomies.api.model.roommate;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.roomies.api.enums.Gender;
 import com.roomies.api.enums.Grade;
@@ -12,16 +14,20 @@ import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import java.io.Serializable;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
 @Setter
 @EqualsAndHashCode
 @Document(collection = "demographics")
-public class Demographic {
+public class Demographic implements Serializable {
+    private static final long serializableId = -4466425627L;
     @Id
     private String id;
     @DBRef
+    @JsonIgnore
     private transient Roommate roommate;
     private Race race;
     @JsonDeserialize(using = AgeDeserializer.class)

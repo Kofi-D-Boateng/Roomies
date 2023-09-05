@@ -9,7 +9,6 @@ import com.roomies.api.util.deserializers.RoommateMapKeyDeserializer;
 import com.roomies.api.util.deserializers.RoommateSetDeserializer;
 import com.roomies.api.util.serializers.RatingSerializer;
 import com.roomies.api.util.serializers.RoommateMapSerializer;
-import com.roomies.api.util.serializers.RoommateRequestSerializer;
 import com.roomies.api.util.serializers.RoommateSetSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -43,8 +42,6 @@ public class RoommateDTO {
     private Location location;
     private Demographic demographics;
     private Preference preference;
-    @JsonSerialize(using = RoommateRequestSerializer.class)
-    @JsonDeserialize(using = RoommateSetDeserializer.class)
     private Set<RoommateRequest> roommateRequests = new HashSet<>();
     @JsonSerialize(keyUsing = RoommateMapSerializer.class)
     @JsonDeserialize(keyUsing= RoommateMapKeyDeserializer.class)
