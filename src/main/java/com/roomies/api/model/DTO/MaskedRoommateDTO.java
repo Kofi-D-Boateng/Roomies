@@ -1,5 +1,6 @@
 package com.roomies.api.model.DTO;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.roomies.api.enums.Grade;
 import com.roomies.api.model.roommate.Demographic;
@@ -13,6 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class MaskedRoommateDTO {
     private String id;
     private String firstName;

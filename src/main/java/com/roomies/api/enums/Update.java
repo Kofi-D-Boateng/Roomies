@@ -15,6 +15,7 @@ public enum Update {
     AREA_CODE("Area Code"),
     ADDRESS("Address"),
     HOUSE_NUMBER("House Number"),
+    GENDER("Gender"),
     PREFERENCE("Preference");
 
     private final String value;

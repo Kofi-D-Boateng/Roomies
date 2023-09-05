@@ -8,8 +8,7 @@ import com.roomies.api.model.request.LoginRequest;
 import com.roomies.api.model.roommate.Demographic;
 import com.roomies.api.model.roommate.Roommate;
 import com.roomies.api.model.roommate.RoommateRequest;
-import com.roomies.api.repository.mongo.RoommateRepository;
-import com.roomies.api.repository.mongo.RoommateRequestRepository;
+import com.roomies.api.repository.mongo.*;
 import com.roomies.api.util.custom.ResponseTuple;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -36,6 +35,12 @@ public class RoommateService {
     private static final long DURATION = 60L;
     @Autowired
     RoommateRepository roommateRepository;
+    @Autowired
+    DemographicRepository demographicRepository;
+    @Autowired
+    LocationRepository locationRepository;
+    @Autowired
+    PreferenceRepository preferenceRepository;
     @Autowired
     RoommateRequestRepository roommateRequestRepository;
     @Autowired
@@ -182,7 +187,7 @@ public class RoommateService {
         if(optionalRoommate.isEmpty() || !encoder.matches(request.getPassword(), optionalRoommate.get().getPassword())){
             return new ResponseTuple<>(ServiceResponse.FAULTY_EMAIL_OR_PASSWORD,optionalRoommate,null);
         }
-
+//        System.out.println("optionalRoommate.get() = " + optionalRoommate.get());
         redisService.saveToCache(optionalRoommate.get().getId(),optionalRoommate.get(),DURATION);
 
         return new ResponseTuple<>(ServiceResponse.SUCCESSFUL,optionalRoommate,apiKeyManagementService.generateAccessAndRefreshToken());
@@ -281,6 +286,9 @@ public class RoommateService {
 
         roommate.updateRoommate(updateObjectMap,objectMapper);
         roommateRepository.save(roommate);
+        demographicRepository.save(roommate.getDemographics());
+        locationRepository.save(roommate.getLocation());
+        preferenceRepository.save(roommate.getPreference());
         redisService.saveToCache(id,roommate,DURATION);
         return ServiceResponse.SUCCESSFUL;
     }

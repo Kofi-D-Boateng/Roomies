@@ -1,23 +1,24 @@
 package com.roomies.api.model.roommate;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.roomies.api.enums.Gender;
 import com.roomies.api.enums.Grade;
 import com.roomies.api.enums.Rating;
 import com.roomies.api.enums.Update;
 import com.roomies.api.util.deserializers.RoommateMapKeyDeserializer;
 import com.roomies.api.util.deserializers.RoommateSetDeserializer;
 import com.roomies.api.util.serializers.RoommateMapSerializer;
-import com.roomies.api.util.serializers.RoommateRequestSerializer;
 import com.roomies.api.util.serializers.RoommateSetSerializer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -29,11 +30,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Slf4j
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 @Document(collection = "roommates")
 public class Roommate implements RoommateOperations, Serializable  {
     private static final long serializableId = 45466425627L;
@@ -75,14 +78,14 @@ public class Roommate implements RoommateOperations, Serializable  {
     @Field("decommission_timestamp")
     private Long dateForDeletion;
     @DBRef
-    private Location location;
+    private Location location = new Location();
     @DBRef
-    private Demographic demographics;
+    private Demographic demographics = new Demographic();
     @DBRef
-    private Preference preference;
+    private Preference preference = new Preference();
     @Field("roommate_requests")
     @DBRef
-    @JsonSerialize(using = RoommateRequestSerializer.class)
+
     private Set<RoommateRequest> roommateRequests = new HashSet<>();
     @Field("blocked_roommates")
     @DBRef
@@ -123,6 +126,9 @@ public class Roommate implements RoommateOperations, Serializable  {
 
     public void updateRoommate(Map<Update,Object> updateObjectMap, ObjectMapper objectMapper){
         Map<Update,Object> checkedMap = checkViolations(updateObjectMap);
+        if(demographics == null) demographics = new Demographic();
+        if(location == null) location = new Location();
+        if(preference == null) preference = new Preference();
         checkedMap.entrySet().stream().parallel().forEach(entry -> {
             Update key = entry.getKey();
             switch (key) {
@@ -139,6 +145,15 @@ public class Roommate implements RoommateOperations, Serializable  {
                 case AREA -> location.setArea((String) entry.getValue());
                 case AREA_CODE -> location.setAreaCode((String) entry.getValue());
                 case ADDRESS -> location.setStreet((String) entry.getValue());
+                case GENDER -> {
+                    String g = (String) entry.getValue();
+                    switch (g){
+                        case "M" -> demographics.setGender(Gender.MALE);
+                        case "F" -> demographics.setGender(Gender.FEMALE);
+                        case "N" -> demographics.setGender(Gender.NON_BINARY);
+                        default -> log.warn("Value for gender does not conform to api standards....");
+                    }
+                }
                 case PREFERENCE -> {
                     Map<String,Object> newPreferences = objectMapper.convertValue(entry.getValue(), new TypeReference<Map<String, Object>>() {});
                     preference.getPreferences().putAll(newPreferences);
