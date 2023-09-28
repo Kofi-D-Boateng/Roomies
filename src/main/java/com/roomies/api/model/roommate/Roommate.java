@@ -82,7 +82,7 @@ public class Roommate implements RoommateOperations, Serializable  {
     @DBRef
     private Demographic demographics = new Demographic();
     @DBRef
-    private Preference preference = new Preference();
+    private Map<String,Object> preference = new HashMap<>();
     @Field("roommate_requests")
     @DBRef
 
@@ -128,7 +128,7 @@ public class Roommate implements RoommateOperations, Serializable  {
         Map<Update,Object> checkedMap = checkViolations(updateObjectMap);
         if(demographics == null) demographics = new Demographic();
         if(location == null) location = new Location();
-        if(preference == null) preference = new Preference();
+        if(preference == null) preference = new HashMap<>();
         checkedMap.entrySet().stream().parallel().forEach(entry -> {
             Update key = entry.getKey();
             switch (key) {
@@ -156,7 +156,7 @@ public class Roommate implements RoommateOperations, Serializable  {
                 }
                 case PREFERENCE -> {
                     Map<String,Object> newPreferences = objectMapper.convertValue(entry.getValue(), new TypeReference<Map<String, Object>>() {});
-                    preference.getPreferences().putAll(newPreferences);
+                    preference.putAll(newPreferences);
                 }
                 default -> log.warn("No values where found in the map provided");
             }

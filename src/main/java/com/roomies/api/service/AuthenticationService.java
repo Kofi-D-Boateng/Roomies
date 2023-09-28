@@ -10,13 +10,14 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Slf4j
 public class AuthenticationService {
-    public static ConcurrentHashMap<String,Long> mfaCacheMap = new ConcurrentHashMap<>();
+    public static Map<String,Long> mfaCacheMap = new ConcurrentHashMap<>();
     public static String EMAIL_ROUTE_KEY = "email_multiFactor";
     public static String SMS_ROUTE_KEY = "sms_multiFactor";
     @Autowired
