@@ -88,19 +88,19 @@ public class RegistrationService {
 
         demographicRepository.save(roommate.getDemographics());
         locationRepository.save(roommate.getLocation());
-        preferenceRepository.save(roommate.getPreference());
+//        preferenceRepository.save(roommate.getPreference());
         roommateRepository.save(roommate);
         accountValidationRepository.save(validation);
 
-        Preference preference = roommate.getPreference();
+//        Preference preference = roommate.getPreference();
         Demographic demographic = roommate.getDemographics();
         Location location = roommate.getLocation();
-        preference.setRoommate(roommate);
+//        preference.setRoommate(roommate);
         demographic.setRoommate(roommate);
         location.setRoommate(roommate);
         demographicRepository.save(roommate.getDemographics());
         locationRepository.save(roommate.getLocation());
-        preferenceRepository.save(roommate.getPreference());
+//        preferenceRepository.save(roommate.getPreference());
 
         log.info("Saved New User {} and generated token {} to database... Sending token to be emailed for verification",roommate.getEmail(),token);
         kafkaTemplate.send(EMAIL_VERIFICATION_TOPIC,gson.toJson(new Message(token,VALIDATION_PERIOD)));

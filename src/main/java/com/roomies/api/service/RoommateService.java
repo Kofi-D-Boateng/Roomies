@@ -2,6 +2,7 @@ package com.roomies.api.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.roomies.api.enums.Rating;
+import com.roomies.api.enums.RequestStatus;
 import com.roomies.api.enums.ServiceResponse;
 import com.roomies.api.enums.Update;
 import com.roomies.api.model.request.LoginRequest;
@@ -15,6 +16,7 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import reactor.util.function.Tuple2;
@@ -33,6 +35,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class RoommateService {
     private static final long DURATION = 60L;
+    private static final String ROOM_GENERATION_TOPIC = "generate-room";
+    private static final String ROOM_DESTRUCTION_TOPIC = "delete-room";
     @Autowired
     RoommateRepository roommateRepository;
     @Autowired
@@ -51,6 +55,8 @@ public class RoommateService {
     BCryptPasswordEncoder encoder;
     @Autowired
     ObjectMapper objectMapper;
+    @Autowired
+    KafkaTemplate<String,String> kafkaTemplate;
 
     public ServiceResponse acceptRequest(@NonNull String requestId) {
         Optional<RoommateRequest> roommateRequest = roommateRequestRepository.findById(requestId);
@@ -59,10 +65,10 @@ public class RoommateService {
 
         RoommateRequest request = roommateRequest.get();
 
-        roommateRequest.get().setAcceptedRequest(0);
+        roommateRequest.get().setRequestStatus(RequestStatus.ACCEPTED);
         roommateRequest.get().setAcceptedTimestamp(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC));
         roommateRequestRepository.save(request);
-
+        kafkaTemplate.send(ROOM_GENERATION_TOPIC,requestId);
         return ServiceResponse.SUCCESSFUL;
     }
 
@@ -230,13 +236,14 @@ public class RoommateService {
         RoommateRequest request = new RoommateRequest();
         request.setRequestingRoommate(requestingRoommate);
         request.setRequestedRoommate(requestedRoommate);
+        request.setRequestStatus(RequestStatus.PENDING);
         if(message != null) request.setMessage(message.trim());
         request.setCreationTimestamp(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC));
 
         requestingRoommate.getRoommateRequests().add(request);
         requestedRoommate.getRoommateRequests().add(request);
 
-        roommateRequestRepository.save(request);
+        RoommateRequest result = roommateRequestRepository.save(request);
         roommateRepository.saveAll(List.of(requestedRoommate,requestingRoommate));
         List<Roommate> roommates = List.of(requestedRoommate,requestingRoommate);
         Map<String,Object> roommateMap = roommates.stream().collect(Collectors.toMap(Roommate::getId, roommate -> roommate));
@@ -259,14 +266,14 @@ public class RoommateService {
         roommate.getRoommateRequests().remove(request);
         requestingRoommate.getRoommateRequests().remove(request);
 
-        roommateRequest.get().setAcceptedRequest(1);
+        roommateRequest.get().setRequestStatus(RequestStatus.REJECTED);
         roommateRequest.get().setRejectionTimestamp(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC));
         roommateRequestRepository.save(request);
         roommateRepository.saveAll(List.of(roommate,requestingRoommate));
 
         redisService.flushFromCache(roommate.getId());
         redisService.flushFromCache(requestingRoommate.getId());
-
+        kafkaTemplate.send(ROOM_GENERATION_TOPIC,requestId);
         return ServiceResponse.SUCCESSFUL;
     }
 
@@ -288,9 +295,8 @@ public class RoommateService {
         roommateRepository.save(roommate);
         demographicRepository.save(roommate.getDemographics());
         locationRepository.save(roommate.getLocation());
-        preferenceRepository.save(roommate.getPreference());
+//        preferenceRepository.save(roommate.getPreference());
         redisService.saveToCache(id,roommate,DURATION);
         return ServiceResponse.SUCCESSFUL;
     }
-
 }

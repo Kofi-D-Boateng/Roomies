@@ -2,6 +2,7 @@ package com.roomies.api.model.roommate;
 
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.roomies.api.enums.RequestStatus;
 import com.roomies.api.util.serializers.MaskedRoommateSerializer;
 import jakarta.annotation.PostConstruct;
 import lombok.*;
@@ -32,7 +33,7 @@ public class RoommateRequest implements Serializable {
     private Roommate requestingRoommate;
     private String message;
     @Field("accepted_request")
-    private Integer acceptedRequest;
+    private RequestStatus requestStatus;
     @Field("creation_timestamp")
     private Long creationTimestamp;
     @Field("rejection_timestamp")
@@ -47,10 +48,12 @@ public class RoommateRequest implements Serializable {
                 ", requestedRoommate=" + (requestedRoommate != null ? requestedRoommate.getId():null) +
                 ", requestingRoommate=" + (requestingRoommate != null ? requestingRoommate.getId():null) +
                 ", message='" + message + '\'' +
-                ", acceptedRequest=" + acceptedRequest +
+                ", acceptedRequest=" + requestStatus +
                 ", creationTimestamp=" + creationTimestamp +
                 ", rejectionTimestamp=" + rejectionTimestamp +
                 ", acceptedTimestamp=" + acceptedTimestamp +
                 '}';
     }
 }
+
+

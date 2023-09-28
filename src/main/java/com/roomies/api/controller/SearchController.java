@@ -25,7 +25,7 @@ public class SearchController {
     SearchService searchService;
 
     @GetMapping("/autocomplete")
-    public ResponseEntity<Set<String>> autocompletion(@RequestParam("v") String val){
+    public ResponseEntity<Set<String>> autocompletion(@RequestParam("q") String val){
         if(val == null || val.trim().length() == 0) return ResponseEntity.status(201).body(null);
         log.info("Beginning autocompletion for {}",val);
         Set<String> results = searchService.retrieveMatchedPatterns(val);
@@ -33,10 +33,10 @@ public class SearchController {
     }
 
     @GetMapping("/find-roommates")
-    public ResponseEntity<Set<MaskedRoommateDTO>> findRoommates(@ModelAttribute SearchRequest searchFields){
+    public ResponseEntity<Set<MaskedRoommateDTO>> findRoommates(@RequestParam("id") String id,@ModelAttribute SearchRequest searchFields){
         log.info("Beginning search request for {}",searchFields);
-        if(searchFields.getAddress().trim().length() == 0) return ResponseEntity.status(400).body(null);
-        ResponseTuple<ServiceResponse,Set<MaskedRoommateDTO>,Object> result = searchService.findRoommates(searchFields);
+        if(searchFields.getAddress().trim().length() == 0 || id == null) return ResponseEntity.status(400).body(null);
+        ResponseTuple<ServiceResponse,Set<MaskedRoommateDTO>,Object> result = searchService.findRoommates(id,searchFields);
         if(!result.getVal1().equals(ServiceResponse.SUCCESSFUL)) return ResponseEntity.status(500).body(null);
         return ResponseEntity.status(200).body(result.getVal2());
     }
