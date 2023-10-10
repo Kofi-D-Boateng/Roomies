@@ -72,6 +72,8 @@ public class RoommateService {
         return ServiceResponse.SUCCESSFUL;
     }
 
+    // ADD INPUT VALIDATION BELOW
+
     public ServiceResponse adjustRating(@NonNull String personToRateId, @NonNull String personWhoIsRatingId, @NonNull Rating rating){
         Roommate ratingRoommate;
         Roommate raterRoommate;
@@ -100,6 +102,8 @@ public class RoommateService {
         roommateRepository.save(ratingRoommate);
         return ServiceResponse.SUCCESSFUL;
     }
+
+    // ADD INPUT VALIDATION BELOW
 
     public ServiceResponse blockRoommate(@NonNull String userId, @NonNull String blockingUserId, String reasonForBlocking) {
         Roommate roommate;
@@ -276,6 +280,8 @@ public class RoommateService {
         kafkaTemplate.send(ROOM_GENERATION_TOPIC,requestId);
         return ServiceResponse.SUCCESSFUL;
     }
+
+    // ADD INPUT VALIDATION BELOW
 
     public ServiceResponse updateUserProfile(@NonNull String id, @NonNull Map<Update,Object> updateObjectMap){
         Roommate roommate;
