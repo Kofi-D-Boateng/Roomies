@@ -26,7 +26,7 @@ import java.util.UUID;
 @Slf4j
 public class RegistrationService {
 
-    private static final String EMAIL_VERIFICATION_TOPIC = "email_verification";
+    private static final String EMAIL_VERIFICATION_TOPIC = "email-verification";
     private static final Long VALIDATION_PERIOD = 10L;
 
     @Autowired

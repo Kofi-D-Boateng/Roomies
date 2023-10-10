@@ -81,7 +81,6 @@ public class Roommate implements RoommateOperations, Serializable  {
     private Location location = new Location();
     @DBRef
     private Demographic demographics = new Demographic();
-    @DBRef
     private Map<String,Object> preference = new HashMap<>();
     @Field("roommate_requests")
     @DBRef
