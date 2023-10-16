@@ -13,4 +13,10 @@ public interface GoogleMap {
     GeocodingResult lookupAddressByName(String address);
     GeocodingResult lookupAddressByCoords(Double longitude, Double latitude);
     List<Prediction> addressAutocompletion(String address);
+    /**
+     *
+     * @param stringParts A String array
+     * @return string - This string is built based on the string parts given in the argument
+     */
+    String buildSearchableString(String[] stringParts);
 }

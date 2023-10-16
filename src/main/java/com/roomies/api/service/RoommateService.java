@@ -11,6 +11,10 @@ import com.roomies.api.model.roommate.Roommate;
 import com.roomies.api.model.roommate.RoommateRequest;
 import com.roomies.api.repository.mongo.*;
 import com.roomies.api.util.custom.ResponseTuple;
+import com.roomies.api.util.external.enums.GoogleStatus;
+import com.roomies.api.util.external.google.GoogleMaps;
+import com.roomies.api.util.external.google.results.GeocodingResult;
+import com.roomies.api.util.external.google.results.Location;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -57,6 +61,8 @@ public class RoommateService {
     ObjectMapper objectMapper;
     @Autowired
     KafkaTemplate<String,String> kafkaTemplate;
+    @Autowired
+    GoogleMaps googleMaps;
 
     public ServiceResponse acceptRequest(@NonNull String requestId) {
         Optional<RoommateRequest> roommateRequest = roommateRequestRepository.findById(requestId);
@@ -295,6 +301,22 @@ public class RoommateService {
             roommate = mongoOptional.get();
         }else{
             roommate = (Roommate) redisOptional.get();
+        }
+
+
+        StringBuilder newAddress = new StringBuilder();
+        if(updateObjectMap.containsKey(Update.ADDRESS)) newAddress.append(updateObjectMap.get(Update.ADDRESS)).append(",");
+        if(updateObjectMap.containsKey(Update.AREA)) newAddress.append(updateObjectMap.get(Update.AREA)).append(",");
+        if(updateObjectMap.containsKey(Update.AREA_CODE)) newAddress.append(updateObjectMap.get(Update.AREA_CODE)).append(",");
+        if(updateObjectMap.containsKey(Update.COUNTRY)) newAddress.append(updateObjectMap.get(Update.COUNTRY)).append(",");
+
+        GeocodingResult result = googleMaps.lookupAddressByName(newAddress.toString());
+        if(!result.getStatus().equals(GoogleStatus.OK.getValue())){
+            log.warn("Google could not find the address to update for user with id: {}.... Will still save address",id);
+        }else{
+            Location coords = result.getResults().get(0).getGeometry().getLocation();
+            roommate.getLocation().setLongitude(coords.getLongitude());
+            roommate.getLocation().setLatitude(coords.getLatitude());
         }
 
         roommate.updateRoommate(updateObjectMap,objectMapper);

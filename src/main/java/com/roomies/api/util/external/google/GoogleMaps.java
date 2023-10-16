@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 @AllArgsConstructor
@@ -147,5 +148,24 @@ public class GoogleMaps implements GoogleMap {
         HttpUrl.Builder builder = url.newBuilder();
         for(String segment:path) builder.addPathSegment(segment);
         return builder;
+    }
+
+    @Override
+    public String buildSearchableString(String[] stringParts) {
+        log.info("Building String from parts {}", Arrays.toString(stringParts));
+        StringBuilder builder = new StringBuilder();
+        for (String part:stringParts) {
+            String p;
+            if(part.contains(",")){
+                p = part.substring(0,part.trim().length()-1);
+            }else{
+                p = part.trim();
+            }
+            builder.append(p);
+            builder.append(" ");
+        }
+        String s = builder.toString();
+        log.info("Finished String {}",s);
+        return s;
     }
 }

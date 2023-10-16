@@ -8,7 +8,6 @@ import com.roomies.api.enums.Unit;
 import com.roomies.api.model.DTO.MaskedRoommateDTO;
 import com.roomies.api.model.request.SearchRequest;
 import com.roomies.api.model.roommate.Location;
-import com.roomies.api.model.roommate.Roommate;
 import com.roomies.api.repository.mongo.DemographicRepository;
 import com.roomies.api.repository.mongo.LocationRepository;
 import com.roomies.api.repository.mongo.RoommateRepository;
@@ -58,7 +57,7 @@ public class SearchService {
 
     public Set<String> retrieveMatchedPatterns(@NonNull String value){
         String[] addressParts = value.contains(",") ? value.split(",") : value.split(" ");
-        String address = buildSearchableString(addressParts);
+        String address = googleMaps.buildSearchableString(addressParts);
         log.info("Beginning Search for address string {}",address);
         Set<String> addresses = addressTrie.getMatches(address);
         if(addresses == null || addresses.size() == 0){
@@ -67,7 +66,7 @@ public class SearchService {
             if(predictions == null) return new HashSet<>();
             addresses = predictions.stream().map(Prediction::getDescription).collect(Collectors.toSet());
             for(String word:addresses){
-                String insertableAddress = buildSearchableString(word.split(","));
+                String insertableAddress = googleMaps.buildSearchableString(word.split(","));
                 String[] stringParts = insertableAddress.split(" ");
                 if(addressTrie.containsPrefix(insertableAddress)){
                     log.info("Address '{}' is already in Trie... continuing to next word",insertableAddress);
@@ -85,7 +84,7 @@ public class SearchService {
      * @return ResponseTuple[ServiceResponse, Set[MaskedRoommateDTO] || null , null] - The response tuple will return contain the gather result for the search of roommates based on what was requested.
      */
     public ResponseTuple<ServiceResponse,Set<MaskedRoommateDTO>,Object> findRoommates(@NonNull String id,@NonNull SearchRequest request){
-        String searchString = buildSearchableString(request.getAddress().split(" "));
+        String searchString = googleMaps.buildSearchableString(request.getAddress().split(" "));
         request.setAddress(searchString);
         String key = request.generateHashKey();
         Set<MaskedRoommateDTO> maskedRoommateDTOSet;
@@ -115,7 +114,7 @@ public class SearchService {
                 if(!result.getStatus().equals(GoogleStatus.OK.getValue())) return new ResponseTuple<>(ServiceResponse.UNSUCCESSFUL,null,null);
                 com.roomies.api.util.external.google.results.Location locationCoord = results.get(0).getGeometry().getLocation();
                 List<AddressComponent> addressComponents = results.get(0).getAddressComponent();
-                String parsedAddress = buildSearchableString(results.get(0).getFormattedAddress().split(","));
+                String parsedAddress = googleMaps.buildSearchableString(results.get(0).getFormattedAddress().split(","));
                 locale = addressComponents.get(addressComponents.size()-3).getShortName();
                 lat = locationCoord.getLatitude();
                 lon = locationCoord.getLongitude();
@@ -186,28 +185,5 @@ public class SearchService {
         double a = Math.pow(Math.sin(distanceLatitude/2),2) + Math.cos(latRad) * Math.cos(lat1Rad) * Math.pow(Math.sin(distanceLongitude/2),2);
         double c = 2 * Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
         return earthRadius - c;
-    }
-
-    /**
-     *
-     * @param stringParts A String array
-     * @return string - This string is built based on the string parts given in the argument
-     */
-    private String buildSearchableString(String[] stringParts){
-        log.info("Building String from parts {}",Arrays.toString(stringParts));
-        StringBuilder builder = new StringBuilder();
-        for (String part:stringParts) {
-            String p;
-            if(part.contains(",")){
-                p = part.substring(0,part.trim().length()-1);
-            }else{
-                p = part.trim();
-            }
-            builder.append(p);
-            builder.append(" ");
-        }
-        String s = builder.toString();
-        log.info("Finished String {}",s);
-        return s;
     }
 }
