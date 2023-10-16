@@ -26,6 +26,7 @@ import org.springframework.data.mongodb.core.mapping.Field;
 
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -137,6 +138,18 @@ public class Roommate implements RoommateOperations, Serializable  {
                 case PHONE_NUMBER -> setPhoneNumber((Long) entry.getValue());
                 case BIOGRAPHY -> setBiography((String) entry.getValue());
                 case STUDENT_STATUS -> setStudent((Boolean) entry.getValue());
+                case COED_CHOICE -> setAcceptingCoed((Boolean) entry.getValue());
+                case AVAILABILITY_DATE -> setAvailabilityDate((Long) entry.getValue());
+                case MFA_CHOICE -> {
+                    String[] m = (String[]) entry.getValue();
+                    if(m[0].equals("T")){
+                        setMfaActive(true);
+                        preference.putIfAbsent("MFA_CHOICE",m[1]);
+                    }else{
+                        setMfaActive(false);
+                        preference.remove("MFA_CHOICE");
+                    }
+                }
                 case UNIVERSITY -> demographics.setUniversityName((String) entry.getValue());
                 case MAJOR -> demographics.setMajor((String) entry.getValue());
                 case SCHOOL_GRADE -> demographics.setSchoolGrade((Grade) entry.getValue());

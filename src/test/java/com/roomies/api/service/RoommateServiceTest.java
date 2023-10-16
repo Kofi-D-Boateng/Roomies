@@ -2,6 +2,7 @@ package com.roomies.api.service;
 
 import com.roomies.api.enums.Gender;
 import com.roomies.api.enums.Rating;
+import com.roomies.api.enums.RequestStatus;
 import com.roomies.api.enums.ServiceResponse;
 import com.roomies.api.model.roommate.Demographic;
 import com.roomies.api.model.request.LoginRequest;
@@ -9,7 +10,6 @@ import com.roomies.api.model.roommate.Roommate;
 import com.roomies.api.model.roommate.RoommateRequest;
 import com.roomies.api.repository.mongo.RoommateRepository;
 import com.roomies.api.repository.mongo.RoommateRequestRepository;
-import com.roomies.api.repository.redis.RoommateRedisRepository;
 import com.roomies.api.util.custom.ResponseTuple;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,10 +26,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 import static org.mockito.Mockito.when;
@@ -41,6 +40,7 @@ import static org.mockito.Mockito.when;
 class RoommateServiceTest {
      Roommate roommate;
      Roommate roommate2;
+    private static final long DURATION = 60L;
     @Mock
     RoommateRepository roommateRepository;
     @Mock
@@ -98,7 +98,7 @@ class RoommateServiceTest {
     void getUserProfile() {
         String id = UUID.randomUUID().toString();
         roommate.setId(id);
-        when(roommateRedisRepository.findById(id)).thenReturn(Optional.of(roommate));
+        when(redisService.retrieveFromCache(id)).thenReturn(Optional.of(roommate));
         Roommate r = roommateService.getUserProfile(id).getVal2();
         assertNotNull(r);
     }
@@ -106,11 +106,11 @@ class RoommateServiceTest {
     @Test
     void requestRoommate() {
         String id1 = UUID.randomUUID().toString(), id2 = UUID.randomUUID().toString();
-        when(roommateRedisRepository.findById(id1)).thenReturn(Optional.of(roommate));
-        when(roommateRedisRepository.findById(id2)).thenReturn(Optional.of(roommate2));
-
+        when(redisService.retrieveFromCache(id1)).thenReturn(Optional.of(roommate));
+        when(redisService.retrieveFromCache(id2)).thenReturn(Optional.of(roommate2));
+        Map<String,Object> map = Stream.of(roommate,roommate2).collect(Collectors.toMap(Roommate::getId, roommate1 -> roommate1));
         lenient().when(roommateRepository.saveAll(List.of(roommate,roommate2))).thenReturn(null);
-        lenient().when(roommateRedisRepository.saveAll(List.of(roommate,roommate2))).thenReturn(null);
+        lenient().doNothing().when(redisService).saveAllToCache(map,DURATION);
 
         ServiceResponse response = roommateService.requestRoommate(id1,id2,null);
 
@@ -123,7 +123,7 @@ class RoommateServiceTest {
     void removeRequest() {
         String id = UUID.randomUUID().toString();
         RoommateRequest request = new RoommateRequest(id,roommate,roommate2,null
-        ,2, LocalDateTime.now().minusDays(3).toEpochSecond(ZoneOffset.UTC),null,null);
+        ,RequestStatus.REJECTED, LocalDateTime.now().minusDays(3).toEpochSecond(ZoneOffset.UTC),null,null);
 
         roommate.getRoommateRequests().add(request);
         roommate2.getRoommateRequests().add(request);
@@ -140,14 +140,14 @@ class RoommateServiceTest {
         assertEquals(0,roommate.getRoommateRequests().size());
         assertEquals(0,roommate2.getRoommateRequests().size());
         assertEquals(ServiceResponse.SUCCESSFUL,response);
-        assertEquals(1,request.getAcceptedRequest());
+        assertEquals(RequestStatus.REJECTED,request.getRequestStatus());
     }
 
     @Test
     void acceptRequest() {
         String id = UUID.randomUUID().toString();
         RoommateRequest request = new RoommateRequest(id,roommate,roommate2,null
-                ,2, LocalDateTime.now().minusDays(3).toEpochSecond(ZoneOffset.UTC),null,null);
+                ,RequestStatus.ACCEPTED, LocalDateTime.now().minusDays(3).toEpochSecond(ZoneOffset.UTC),null,null);
 
         roommate.getRoommateRequests().add(request);
         roommate2.getRoommateRequests().add(request);
@@ -164,14 +164,14 @@ class RoommateServiceTest {
         assertEquals(1,roommate.getRoommateRequests().size());
         assertEquals(1,roommate2.getRoommateRequests().size());
         assertEquals(ServiceResponse.SUCCESSFUL,response);
-        assertEquals(0,request.getAcceptedRequest());
+        assertEquals(RequestStatus.ACCEPTED,request.getRequestStatus());
     }
 
     @Test
     void incrementViewership() {
         String id1 = UUID.randomUUID().toString(), id2 = UUID.randomUUID().toString();
-        when(roommateRedisRepository.findById(id1)).thenReturn(Optional.of(roommate));
-        when(roommateRedisRepository.findById(id2)).thenReturn(Optional.of(roommate2));
+        when(redisService.retrieveFromCache(id1)).thenReturn(Optional.of(roommate));
+        when(redisService.retrieveFromCache(id2)).thenReturn(Optional.of(roommate2));
 
         ServiceResponse response = roommateService.incrementViewership(id1,id2);
         assertEquals(ServiceResponse.SUCCESSFUL, response);
@@ -185,8 +185,8 @@ class RoommateServiceTest {
         String id1 = UUID.randomUUID().toString(), id2 = UUID.randomUUID().toString();
         Rating rating = Rating.UP;
         Long currRating = roommate2.getTotalRating(), currPositiveRating = roommate2.getPositiveRating();
-        when(roommateRedisRepository.findById(id1)).thenReturn(Optional.of(roommate));
-        when(roommateRedisRepository.findById(id2)).thenReturn(Optional.of(roommate2));
+        when(redisService.retrieveFromCache(id1)).thenReturn(Optional.of(roommate));
+        when(redisService.retrieveFromCache(id2)).thenReturn(Optional.of(roommate2));
 
         ServiceResponse response = roommateService.adjustRating(id2,id1,rating);
         assertEquals(ServiceResponse.SUCCESSFUL, response);
@@ -201,8 +201,8 @@ class RoommateServiceTest {
     @Test
     void blockRoommate() {
         String id1 = UUID.randomUUID().toString(), id2 = UUID.randomUUID().toString();
-        when(roommateRedisRepository.findById(id1)).thenReturn(Optional.of(roommate));
-        when(roommateRedisRepository.findById(id2)).thenReturn(Optional.of(roommate2));
+        when(redisService.retrieveFromCache(id1)).thenReturn(Optional.of(roommate));
+        when(redisService.retrieveFromCache(id2)).thenReturn(Optional.of(roommate2));
 
         ServiceResponse response = roommateService.blockRoommate(id1,id2,null);
         assertEquals(ServiceResponse.SUCCESSFUL, response);

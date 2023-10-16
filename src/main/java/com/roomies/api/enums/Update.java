@@ -16,7 +16,11 @@ public enum Update {
     ADDRESS("Address"),
     HOUSE_NUMBER("House Number"),
     GENDER("Gender"),
-    PREFERENCE("Preference");
+    PREFERENCE("Preference"),
+    MFA_CHOICE("MFA_CHOICE"),
+    COED_CHOICE("COED_CHOICE"),
+    AVAILABILITY_DATE("AVAILABILITY_DATE");
+
 
     private final String value;
 
