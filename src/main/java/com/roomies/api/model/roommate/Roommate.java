@@ -127,7 +127,9 @@ public class Roommate implements RoommateOperations, Serializable  {
     public void updateRoommate(Map<Update,Object> updateObjectMap, ObjectMapper objectMapper){
         Map<Update,Object> checkedMap = checkViolations(updateObjectMap);
         if(demographics == null) demographics = new Demographic();
+        if(demographics.getRoommate() == null) demographics.setRoommate(this);
         if(location == null) location = new Location();
+        if(location.getRoommate() == null) location.setRoommate(this);
         if(preference == null) preference = new HashMap<>();
         checkedMap.entrySet().stream().parallel().forEach(entry -> {
             Update key = entry.getKey();

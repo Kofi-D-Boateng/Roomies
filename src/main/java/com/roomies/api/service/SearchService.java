@@ -37,8 +37,8 @@ import java.util.stream.Collectors;
 public class SearchService {
 
     private static final long MAXIMUM_QUERY_LIFETIME = 10L; // Each query will be stored in the cache for the value of this in minutes;
-    private static final double EARTH_DISTANCE_IMPERIAL = 3958.8;
-    private static final double EARTH_DISTANCE_METRIC = 6371.0;
+    private static final double EARTH_RADIUS_MILES = 3958.8;
+    private static final double EARTH_RADIUS_KILOMETERS = 6371.0;
     private static final AddressTrie addressTrie = new AddressTrie();
     @Autowired
     RedisService redisService;
@@ -60,6 +60,7 @@ public class SearchService {
         String address = googleMaps.buildSearchableString(addressParts);
         log.info("Beginning Search for address string {}",address);
         Set<String> addresses = addressTrie.getMatches(address);
+        log.info("Matches for address: {}",addresses);
         if(addresses == null || addresses.size() == 0){
             log.warn("No matches where found in address trie.... sourcing external api....");
             List<Prediction> predictions = googleMaps.addressAutocompletion(value);
@@ -90,7 +91,6 @@ public class SearchService {
         Set<MaskedRoommateDTO> maskedRoommateDTOSet;
         Optional<Object> optional = redisService.retrieveFromCache(key);
         if(optional.isPresent()){
-
             Set<MaskedRoommateDTO> list = objectMapper.convertValue(optional.get(), new TypeReference<Set<MaskedRoommateDTO>>() {});
             return new ResponseTuple<>(ServiceResponse.SUCCESSFUL,list,null);
         }else{
@@ -127,14 +127,15 @@ public class SearchService {
             }
 
             double[] latLngCoords = generateBoxBoundaries(lat, lon, request.getDistance(), Objects.equals(locale, "US") ? Unit.IMPERIAL:Unit.METRIC);
-            log.info("Box Coords: {}",latLngCoords);
+            log.info("Querying database for potential roommates....");
             Optional<List<Location>> locationOptional = locationRepository.findLocationsWithinRange(latLngCoords[0],latLngCoords[1],latLngCoords[2],latLngCoords[3]);
 
             if(locationOptional.isEmpty()) return new ResponseTuple<>(ServiceResponse.UNSUCCESSFUL,null,null);
 
             List<Location> locations = locationOptional.get();
             maskedRoommateDTOSet = locations.stream()
-                    .filter(location -> calculateDistance(location.getLatitude(),location.getLongitude(),lat,lon,Objects.equals(locale, "US") ? Unit.IMPERIAL:Unit.METRIC) <= request.getDistance())
+                    .filter(location -> !Objects.equals(location.getRoommate().getId(), id) &&
+                            calculateDistance(location.getLatitude(),location.getLongitude(),lat,lon,Objects.equals(locale, "US") ? Unit.IMPERIAL:Unit.METRIC) <= request.getDistance())
                     .map(location -> objectMapper.convertValue(location.getRoommate(), MaskedRoommateDTO.class))
                     .collect(Collectors.toSet());
         }
@@ -151,17 +152,28 @@ public class SearchService {
      * @param distance  The maximum distance the user can be within the box
      * @return double[] - Returns an array of boundaries that will create a box around our coordinates represented as [minLat,maxLat,minLon,maxLon]
      */
-    private double[] generateBoxBoundaries(double latitude, double longitude, double distance, Unit unit){
-        double earthRadius = unit == Unit.IMPERIAL ? EARTH_DISTANCE_IMPERIAL : EARTH_DISTANCE_METRIC;
-        double latOffset = distance/earthRadius;
-        double lonOffset = distance/(earthRadius * Math.cos(Math.toRadians(latitude)));
+    private double[] generateBoxBoundaries(double latitude, double longitude, double distance, Unit unit) {
+        double earthRadius = unit == Unit.IMPERIAL ? EARTH_RADIUS_MILES : EARTH_RADIUS_KILOMETERS;
 
-        double minLat = latitude - latOffset;
-        double maxLat = latitude + latOffset;
-        double minLon = longitude - lonOffset;
-        double maxLon = longitude + lonOffset;
+        double angularDistance = distance / earthRadius;
 
-        return new double[]{minLat,maxLat,minLon,maxLon};
+        double radianLat = Math.toRadians(latitude);
+        double radianLon = Math.toRadians(longitude);
+
+        double minLat = radianLat - angularDistance;
+        double maxLat = radianLat + angularDistance;
+
+        double deltaLon = Math.asin(Math.sin(angularDistance) / Math.cos(radianLat));
+        double minLon = radianLon - deltaLon;
+        double maxLon = radianLon + deltaLon;
+
+        // Convert back to degrees
+        minLat = Math.toDegrees(minLat);
+        maxLat = Math.toDegrees(maxLat);
+        minLon = Math.toDegrees(minLon);
+        maxLon = Math.toDegrees(maxLon);
+
+        return new double[]{minLat, maxLat, minLon, maxLon};
     }
 
     /**
@@ -173,7 +185,7 @@ public class SearchService {
      * @return distance - The calculated distance from the
      */
     private double calculateDistance(double latitude,double longitude,double latitude1,double longitude1,Unit unit){
-        double earthRadius = unit == Unit.IMPERIAL ? EARTH_DISTANCE_IMPERIAL : EARTH_DISTANCE_METRIC;
+        double earthRadius = unit == Unit.IMPERIAL ? EARTH_RADIUS_MILES : EARTH_RADIUS_KILOMETERS;
         double latRad = Math.toRadians(latitude);
         double lonRad = Math.toRadians(longitude);
         double lat1Rad = Math.toRadians(latitude1);
@@ -184,6 +196,7 @@ public class SearchService {
 
         double a = Math.pow(Math.sin(distanceLatitude/2),2) + Math.cos(latRad) * Math.cos(lat1Rad) * Math.pow(Math.sin(distanceLongitude/2),2);
         double c = 2 * Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-        return earthRadius - c;
+
+        return earthRadius * c;
     }
 }

@@ -19,6 +19,7 @@ import java.io.Serializable;
 public class Location implements Serializable {
     private static final long serializableId = 65466425627L;
     @Id
+    @JsonIgnore
     private String id;
     @DBRef
     @JsonIgnore
