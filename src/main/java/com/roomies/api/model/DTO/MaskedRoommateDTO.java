@@ -11,11 +11,14 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class MaskedRoommateDTO {
+public class MaskedRoommateDTO implements Serializable {
+    private static final long serializableId = -92346625634L;
     private String id;
     private String firstName;
     private String middleName;
@@ -33,5 +36,4 @@ public class MaskedRoommateDTO {
     private Grade schoolGrade;
     private Location location;
     private Demographic demographics;
-    private Preference preference;
 }

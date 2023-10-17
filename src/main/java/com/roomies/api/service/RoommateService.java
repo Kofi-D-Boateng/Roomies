@@ -323,7 +323,6 @@ public class RoommateService {
         roommateRepository.save(roommate);
         demographicRepository.save(roommate.getDemographics());
         locationRepository.save(roommate.getLocation());
-//        preferenceRepository.save(roommate.getPreference());
         redisService.saveToCache(id,roommate,DURATION);
         return ServiceResponse.SUCCESSFUL;
     }

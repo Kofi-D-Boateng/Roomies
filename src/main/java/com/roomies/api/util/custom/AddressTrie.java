@@ -212,6 +212,7 @@ public class AddressTrie implements CoordinateTrie {
         char[] prefixArr = address.toCharArray();
         for(Character character: prefixArr){
             if(Character.isWhitespace(character))continue;
+            log.info("Character Searching for: {}",character);
             if(!node.getValues().containsKey(character) || !node.getValues().containsKey(Character.toUpperCase(character))){
                 log.warn("Could not find the last character in the current node: {} with current character: {}",node.getValues(),character);
                 if(node.finishedWords != null && node.finishedWords.size() > 0) break;

@@ -25,6 +25,7 @@ import java.io.Serializable;
 public class Demographic implements Serializable {
     private static final long serializableId = -4466425627L;
     @Id
+    @JsonIgnore
     private String id;
     @DBRef
     @JsonIgnore
