@@ -4,7 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -20,9 +22,8 @@ public class SearchRequest {
     private boolean violationPresent;
 
     public String generateHashKey(){
-        String[] fullName = this.getClass().getName().split("//.");
-        String className = fullName[fullName.length-1];
-        return className + this.address + " " + distance;
+        String initialKey = this.address+ " " + distance;
+        return String.join(":", initialKey.split(" "));
     }
 
     public void validationCheck(){

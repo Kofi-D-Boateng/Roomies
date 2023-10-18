@@ -35,9 +35,9 @@ public class RoommateLocationInterceptor extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        log.info("Passing through roommate-location interceptor....");
+        log.info("Conducting reverse IP lookup for current session....");
         if(!ip2Location.apiKeyIsSet()){
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+//            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             log.error("Api Key is not present in geolocation filter.... ");
             return;
         }

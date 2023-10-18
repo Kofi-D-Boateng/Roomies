@@ -85,16 +85,16 @@ public class SearchService {
      * @return ResponseTuple[ServiceResponse, Set[MaskedRoommateDTO] || null , null] - The response tuple will return contain the gather result for the search of roommates based on what was requested.
      */
     public ResponseTuple<ServiceResponse,Set<MaskedRoommateDTO>,Object> findRoommates(@NonNull String id,@NonNull SearchRequest request){
-        String searchString = googleMaps.buildSearchableString(request.getAddress().split(" "));
-        request.setAddress(searchString);
+        request.setAddress(googleMaps.buildSearchableString(request.getAddress().split(" ")));
         String key = request.generateHashKey();
         Set<MaskedRoommateDTO> maskedRoommateDTOSet;
+        log.info("Initial Cache check for computed query results for address: {}",request.getAddress());
         Optional<Object> optional = redisService.retrieveFromCache(key);
         if(optional.isPresent()){
             Set<MaskedRoommateDTO> list = objectMapper.convertValue(optional.get(), new TypeReference<Set<MaskedRoommateDTO>>() {});
             return new ResponseTuple<>(ServiceResponse.SUCCESSFUL,list,null);
         }else{
-
+            log.info("Cache Miss.... Beginning query...");
             /**
              * STEP ONE: CHECK ADDRESS TRIE FOR COORDS
              * STEP TWO: IF COORDS ARE NOT THERE USE GOOGLE API TO GET FORMATTED ADDRESS AND COORDINATES THEN ADD TO TRIE
@@ -107,7 +107,7 @@ public class SearchService {
             double lon;
             String locale;
             AddressNode addressNode = addressTrie.getNode(request.getAddress());
-
+            log.info("ADDRESS NODE:{}",addressNode);
             if(addressNode == null || (addressNode.getLatitude() <= 0 && addressNode.getLongitude() <= 0)){
                 GeocodingResult result = googleMaps.lookupAddressByName(request.getAddress());
                 List<Result> results = result.getResults();
@@ -118,8 +118,8 @@ public class SearchService {
                 locale = addressComponents.get(addressComponents.size()-3).getShortName();
                 lat = locationCoord.getLatitude();
                 lon = locationCoord.getLongitude();
-                if(addressTrie.containsPrefix(parsedAddress)) addressTrie.updateNode(parsedAddress,lat,lon);
-                addressTrie.insert(parsedAddress,lat,lon,locale);
+                if(addressTrie.containsPrefix(parsedAddress)) addressTrie.updateNode(parsedAddress,lat,lon,locale);
+                else addressTrie.insert(parsedAddress,lat,lon,locale);
             }else{
                 lat = addressNode.getLatitude();
                 lon = addressNode.getLongitude();

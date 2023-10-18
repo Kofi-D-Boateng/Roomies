@@ -31,6 +31,7 @@ public class AddressTrie implements CoordinateTrie {
                 node.getValues().putIfAbsent(ch,new AddressNode());
             }
             node =  node.getValues().containsKey(ch) ? (AddressNode) node.getValues().get(ch) : (AddressNode) node.getValues().get(Character.toUpperCase(ch));
+            log.info("CURRENT CHAR: {}",ch);
         }
         node.setEnd(true);
         node.setLatitude(lat);
@@ -196,7 +197,7 @@ public class AddressTrie implements CoordinateTrie {
         char[] prefixArr = address.toCharArray();
         for(Character character: prefixArr){
             if(Character.isWhitespace(character))continue;
-            if(!node.getValues().containsKey(character) || !node.getValues().containsKey(Character.toUpperCase(character))){
+            if(!node.getValues().containsKey(character) && !node.getValues().containsKey(Character.toUpperCase(character))){
                 log.warn("Could not find the last character in the current node: {} with current character: {}",node.getValues(),character);
                 if(node.finishedWords != null && node.finishedWords.size() > 0) break;
                 else return null;
@@ -213,7 +214,7 @@ public class AddressTrie implements CoordinateTrie {
         for(Character character: prefixArr){
             if(Character.isWhitespace(character))continue;
             log.info("Character Searching for: {}",character);
-            if(!node.getValues().containsKey(character) || !node.getValues().containsKey(Character.toUpperCase(character))){
+            if(!node.getValues().containsKey(character) && !node.getValues().containsKey(Character.toUpperCase(character))){
                 log.warn("Could not find the last character in the current node: {} with current character: {}",node.getValues(),character);
                 if(node.finishedWords != null && node.finishedWords.size() > 0) break;
                 else return null;
@@ -224,7 +225,7 @@ public class AddressTrie implements CoordinateTrie {
     }
 
     @Override
-    public void updateNode(String address, double lat, double lon) {
+    public void updateNode(String address, double lat, double lon, String locale) {
         log.info("Attempting tempting to update address '{}'",address);
         if(address == null) return;
         AddressNode node = root;
@@ -235,8 +236,9 @@ public class AddressTrie implements CoordinateTrie {
             }
             node =  node.getValues().containsKey(ch) ? (AddressNode) node.getValues().get(ch) : (AddressNode) node.getValues().get(Character.toUpperCase(ch));
         }
-        node.setEnd(false);
-        size--;
+        node.setLatitude(lat);
+        node.setLongitude(lon);
+        node.setLocale(locale);
         log.info("Successfully updated node for address {} into the tree.\nUpdated Node: {}",address,node);
     }
 }

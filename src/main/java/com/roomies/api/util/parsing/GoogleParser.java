@@ -21,7 +21,7 @@ public class GoogleParser implements GParser {
 
     @Override
     public List<Prediction> parsePredictions(InputStream inputStream) throws IOException {
-        log.info("Request was successful.... beginning mapping to proper class....\nBody: {}",inputStream);
+        log.info("Request was successful.... beginning mapping to proper class....");
         try {
             PredictionResponse predictionResponse = objectMapper.readValue(inputStream, PredictionResponse.class);
             log.info("{}",predictionResponse.getStatus());
@@ -34,13 +34,13 @@ public class GoogleParser implements GParser {
 
     @Override
     public AddressResponse parseAddressResponse(InputStream inputStream) {
-        log.info("Request was successful.... beginning mapping to proper class....\nBody: {}",inputStream);
+        log.info("Request was successful.... beginning mapping to proper class....");
         return objectMapper.convertValue(inputStream, AddressResponse.class);
     }
 
     @Override
     public GeocodingResult parseGeocodeResults(InputStream inputStream) throws IOException {
-        log.info("Request was successful.... beginning mapping to proper class....\nBody: {}",inputStream);
+        log.info("Request was successful.... beginning mapping to proper class....");
         try {
             return objectMapper.readValue(inputStream, GeocodingResult.class);
         }catch (IOException e){

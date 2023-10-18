@@ -24,7 +24,7 @@ public class TokenValidatorInterceptor extends OncePerRequestFilter {
     ApiKeyManagementService apiKeyManagementService;
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        log.info("Logging from Token Interceptor....");
+        log.info("Performing token authentication....");
         String authorizationHeader = request.getHeader("Authorization");
         if(authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")){
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
