@@ -34,7 +34,6 @@ public class SearchController {
 
     @GetMapping("/find-roommates")
     public ResponseEntity<Set<MaskedRoommateDTO>> findRoommates(@RequestParam("id") String id,@ModelAttribute SearchRequest searchFields){
-        log.info("Beginning search request for {}",searchFields);
         if(searchFields.getAddress().trim().length() == 0 || id == null) return ResponseEntity.status(400).body(null);
         ResponseTuple<ServiceResponse,Set<MaskedRoommateDTO>,Object> result = searchService.findRoommates(id,searchFields);
         if(!result.getVal1().equals(ServiceResponse.SUCCESSFUL)) return ResponseEntity.status(500).body(null);

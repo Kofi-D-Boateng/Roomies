@@ -24,6 +24,7 @@ public interface CoordinateTrie extends Trie{
      * @param address The address to search for in the trie.
      * @param lat The latitude of the address
      * @param lon The longitude of the address
+     * @param locale The locale of the address
      */
-    void updateNode(String address, double lat, double lon);
+    void updateNode(String address, double lat, double lon,String locale);
 }

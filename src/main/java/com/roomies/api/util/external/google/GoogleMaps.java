@@ -15,8 +15,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -25,6 +25,7 @@ import java.util.List;
 public class GoogleMaps implements GoogleMap {
     private static final String BASE_URL = "https://maps.googleapis.com/";
     private static final String ADDRESS_VALIDATION_BASE_URL = "https://addressvalidation.googleapis.com/";
+    private static final Map<String,String> streetAbbreviations = getStreetAbbreviations();
 
     @Value("${com.roomies.google.key}")
     private String GOOGLE_API_KEY;
@@ -129,7 +130,6 @@ public class GoogleMaps implements GoogleMap {
                 .addQueryParameter("types","geocode")
                 .addQueryParameter("key",GOOGLE_API_KEY.trim())
                 .build();
-        log.info("Google endpoint: {}",url.toString());
         Request request = new Request.Builder().url(url).get().build();
         try(Response response = client.newCall(request).execute()) {
             if(response.isSuccessful() && response.body() != null){
@@ -153,19 +153,50 @@ public class GoogleMaps implements GoogleMap {
     @Override
     public String buildSearchableString(String[] stringParts) {
         log.info("Building String from parts {}", Arrays.toString(stringParts));
-        StringBuilder builder = new StringBuilder();
-        for (String part:stringParts) {
-            String p;
-            if(part.contains(",")){
-                p = part.substring(0,part.trim().length()-1);
-            }else{
-                p = part.trim();
-            }
-            builder.append(p);
-            builder.append(" ");
-        }
-        String s = builder.toString();
-        log.info("Finished String {}",s);
-        return s;
+        return Arrays.stream(stringParts)
+                .map(part -> part.contains(",") ? part.substring(0,part.trim().length()-1) :part.trim())
+                .map(part2 -> part2.split(" "))
+                .flatMap(Arrays::stream)
+                .map(p -> streetAbbreviations.getOrDefault(p,p))
+                .filter(p -> !(p.trim().length() == 3 && p.contains("USA")) && !(p.trim().length() == 5 && p.matches("\\d+")))
+                .collect(Collectors.joining(" "));
+    }
+
+    private static Map<String, String> getStreetAbbreviations() {
+        Map<String, String> abbreviations = new HashMap<>();
+
+        // Add street suffixes and their abbreviations to the map
+        abbreviations.put("Avenue", "Ave");
+        abbreviations.put("Boulevard", "Blvd");
+        abbreviations.put("Circle", "Cir");
+        abbreviations.put("Court", "Ct");
+        abbreviations.put("Drive", "Dr");
+        abbreviations.put("Lane", "Ln");
+        abbreviations.put("Road", "Rd");
+        abbreviations.put("Street", "St");
+        abbreviations.put("Terrace", "Ter");
+        abbreviations.put("Way", "Way");
+        abbreviations.put("Parkway", "Pkwy");
+        abbreviations.put("Place", "Pl");
+        abbreviations.put("Square", "Sq");
+        abbreviations.put("Alley", "Aly");
+        abbreviations.put("Loop", "Loop");
+        abbreviations.put("Crescent", "Cres");
+        abbreviations.put("Cove", "Cove");
+        abbreviations.put("Heights", "Hts");
+        abbreviations.put("Expressway", "Expy");
+        abbreviations.put("Mews", "Mews");
+        abbreviations.put("Promenade", "Prom");
+        abbreviations.put("Crossing", "Xing");
+        abbreviations.put("Trail", "Trl");
+        abbreviations.put("Green", "Green");
+        abbreviations.put("Plaza", "Plz");
+        abbreviations.put("Ridge", "Rdg");
+        abbreviations.put("Landing", "Lndg");
+        abbreviations.put("Point", "Pt");
+        abbreviations.put("Pass", "Pass");
+        abbreviations.put("Walk", "Walk");
+
+        return abbreviations;
     }
 }

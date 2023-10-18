@@ -53,5 +53,5 @@ public class Ip2Location {
         }
     }
 
-    public boolean apiKeyIsSet(){return apiKey != null;}
+    public boolean apiKeyIsSet(){return apiKey != null && apiKey.trim().length() >0;}
 }
