@@ -85,8 +85,8 @@ public class RoommateService {
         Roommate raterRoommate;
 //        String key = redisService.generateCacheKey(Roommate.class.getName(),personToRateId);
 //        String key1 = redisService.generateCacheKey(Roommate.class.getName(),personWhoIsRatingId);
-        Optional<Object> ratingRoommateOptional =  redisService.retrieveFromCache(redisService.generateCacheKey(Roommate.class.getName(),personToRateId));
-        Optional<Object> raterRoommateOptional =  redisService.retrieveFromCache(redisService.generateCacheKey(Roommate.class.getName(),personWhoIsRatingId));
+        Optional<Object> ratingRoommateOptional =  redisService.retrieveFromCache(personToRateId);
+        Optional<Object> raterRoommateOptional =  redisService.retrieveFromCache(personWhoIsRatingId);
 
         if(ratingRoommateOptional.isEmpty()){
             Optional<Roommate> optionalRoommate = roommateRepository.findById(personToRateId);

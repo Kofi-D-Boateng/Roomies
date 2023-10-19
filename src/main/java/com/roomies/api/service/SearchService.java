@@ -8,6 +8,7 @@ import com.roomies.api.enums.Unit;
 import com.roomies.api.model.DTO.MaskedRoommateDTO;
 import com.roomies.api.model.request.SearchRequest;
 import com.roomies.api.model.roommate.Location;
+import com.roomies.api.model.roommate.Roommate;
 import com.roomies.api.repository.mongo.DemographicRepository;
 import com.roomies.api.repository.mongo.LocationRepository;
 import com.roomies.api.repository.mongo.RoommateRepository;
@@ -103,6 +104,7 @@ public class SearchService {
              * STEP FOUR: INSERT THE SET WITH THE REQUEST HASHKEY FOR QUICK RETRIEVAL
              * STEP FIVE: RETURN MASKED SET
              */
+            Roommate user;
             double lat;
             double lon;
             String locale;
@@ -129,16 +131,27 @@ public class SearchService {
             double[] latLngCoords = generateBoxBoundaries(lat, lon, request.getDistance(), Objects.equals(locale, "US") ? Unit.IMPERIAL:Unit.METRIC);
             log.info("Querying database for potential roommates....");
             Optional<List<Location>> locationOptional = locationRepository.findLocationsWithinRange(latLngCoords[0],latLngCoords[1],latLngCoords[2],latLngCoords[3]);
+            Optional<Object> potentialUser = redisService.retrieveFromCache(id);
+            if(potentialUser.isEmpty()){
+                log.warn("Could not find id: {} when querying mongo or cache....",id);
+                Optional<Roommate> potentialUserMongo = roommateRepository.findById(id);
+                if(potentialUserMongo.isEmpty()) return new ResponseTuple<>(ServiceResponse.UNSUCCESSFUL,null,null);
+                else user = potentialUserMongo.get();
+            }else{
+                user = (Roommate) potentialUser.get();
+            }
 
             if(locationOptional.isEmpty()) return new ResponseTuple<>(ServiceResponse.UNSUCCESSFUL,null,null);
 
             List<Location> locations = locationOptional.get();
             maskedRoommateDTOSet = locations.stream()
                     .filter(location -> !Objects.equals(location.getRoommate().getId(), id) &&
+                                    (!location.getRoommate().getBlockedRoommates().containsKey(user) && !user.getBlockedRoommates().containsKey(location.getRoommate())) &&
                             calculateDistance(location.getLatitude(),location.getLongitude(),lat,lon,Objects.equals(locale, "US") ? Unit.IMPERIAL:Unit.METRIC) <= request.getDistance())
                     .map(location -> objectMapper.convertValue(location.getRoommate(), MaskedRoommateDTO.class))
                     .collect(Collectors.toSet());
         }
+
 
         ResponseTuple<ServiceResponse,Set<MaskedRoommateDTO>,Object> responseTuple = new ResponseTuple<>(ServiceResponse.SUCCESSFUL,maskedRoommateDTOSet,null);
         redisService.saveToCache(key,maskedRoommateDTOSet,MAXIMUM_QUERY_LIFETIME);
