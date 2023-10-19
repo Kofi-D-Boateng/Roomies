@@ -133,9 +133,11 @@ public class SearchService {
             Optional<List<Location>> locationOptional = locationRepository.findLocationsWithinRange(latLngCoords[0],latLngCoords[1],latLngCoords[2],latLngCoords[3]);
             Optional<Object> potentialUser = redisService.retrieveFromCache(id);
             if(potentialUser.isEmpty()){
-                log.warn("Could not find id: {} when querying mongo or cache....",id);
                 Optional<Roommate> potentialUserMongo = roommateRepository.findById(id);
-                if(potentialUserMongo.isEmpty()) return new ResponseTuple<>(ServiceResponse.UNSUCCESSFUL,null,null);
+                if(potentialUserMongo.isEmpty()){
+                    log.warn("Could not find id: {} when querying mongo or cache....",id);
+                    return new ResponseTuple<>(ServiceResponse.UNSUCCESSFUL,null,null);
+                }
                 else user = potentialUserMongo.get();
             }else{
                 user = (Roommate) potentialUser.get();
