@@ -145,9 +145,10 @@ public class SearchService {
 
             List<Location> locations = locationOptional.get();
             maskedRoommateDTOSet = locations.stream()
-                    .filter(location -> !Objects.equals(location.getRoommate().getId(), id) &&
-                                    (!location.getRoommate().getBlockedRoommates().containsKey(user) && !user.getBlockedRoommates().containsKey(location.getRoommate())) &&
-                            calculateDistance(location.getLatitude(),location.getLongitude(),lat,lon,Objects.equals(locale, "US") ? Unit.IMPERIAL:Unit.METRIC) <= request.getDistance())
+                    .filter(location -> location.getRoommate().isAuthorized()
+                            && !Objects.equals(location.getRoommate().getId(), id)
+                            && (!location.getRoommate().getBlockedRoommates().containsKey(user) && !user.getBlockedRoommates().containsKey(location.getRoommate()))
+                            && calculateDistance(location.getLatitude(),location.getLongitude(),lat,lon,Objects.equals(locale, "US") ? Unit.IMPERIAL:Unit.METRIC) <= request.getDistance())
                     .map(location -> objectMapper.convertValue(location.getRoommate(), MaskedRoommateDTO.class))
                     .collect(Collectors.toSet());
         }
