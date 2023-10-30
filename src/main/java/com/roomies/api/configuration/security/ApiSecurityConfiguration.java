@@ -42,7 +42,7 @@ public class ApiSecurityConfiguration {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(Collections.singletonList("*"));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE"));
-        config.setAllowedHeaders(Arrays.asList("X-Forwarded-For", "X-Real-IP", "Authorization"));
+        config.setAllowedHeaders(Arrays.asList("X-Forwarded-For", "X-Real-IP", "Authorization","UserAgent"));
         config.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/*",config);

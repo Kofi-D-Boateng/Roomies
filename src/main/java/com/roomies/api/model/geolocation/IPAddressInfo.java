@@ -1,5 +1,6 @@
 package com.roomies.api.model.geolocation;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.annotations.SerializedName;
 import com.roomies.api.model.roommate.Roommate;
 import lombok.AllArgsConstructor;
@@ -9,55 +10,60 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Document(collection = "geolocation")
-public class IPAddressInfo {
+public class IPAddressInfo implements Serializable {
+
+    private static final long serialId = -5344092562L ;
 
     @Id
     private String id;
     @DBRef
     private Roommate roommate;
-    @SerializedName("ip")
+    @JsonProperty("ip")
     private String ip;
 
-    @SerializedName("country_code")
+    @JsonProperty("country_code")
     private String countryCode;
 
-    @SerializedName("country_name")
+    @JsonProperty("country_name")
     private String countryName;
 
-    @SerializedName("region_name")
+    @JsonProperty("region_name")
     private String regionName;
 
-    @SerializedName("city_name")
+    @JsonProperty("city_name")
     private String cityName;
 
-    @SerializedName("latitude")
+    @JsonProperty("latitude")
     private double latitude;
 
-    @SerializedName("longitude")
+    @JsonProperty("longitude")
     private double longitude;
 
-    @SerializedName("zip_code")
+    @JsonProperty("zip_code")
     private String zipCode;
 
-    @SerializedName("time_zone")
+    @JsonProperty("time_zone")
     private String timeZone;
 
-    @SerializedName("asn")
+    @JsonProperty("asn")
     private String asn;
 
-    @SerializedName("as")
+    @JsonProperty("as")
     private String as;
 
-    @SerializedName("is_proxy")
+    @JsonProperty("is_proxy")
     private boolean isProxy;
-    private List<String> userAgents = new ArrayList<>();
+    private Set<String> userAgents = new HashSet<>();
     private Long blockedDate;
     private String reason;
 }

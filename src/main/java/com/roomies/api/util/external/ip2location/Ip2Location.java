@@ -1,5 +1,6 @@
 package com.roomies.api.util.external.ip2location;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.roomies.api.model.geolocation.GeolocationRequest;
 import com.roomies.api.model.geolocation.IPAddressInfo;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +27,8 @@ public class Ip2Location {
     private static final String GEOLOCATION_DOMAIN = "https://api.ip2location.io/?";
     @Value("${com.roomies.ip2location.key}")
     private String apiKey;
+    @Autowired
+    ObjectMapper objectMapper;
 
     /**
      *
@@ -43,7 +47,7 @@ public class Ip2Location {
 
         try (Response response = client.newCall(httpRequest).execute()) {
             if (response.isSuccessful() && response.body() != null) {
-                return new Gson().fromJson(response.body().toString(), IPAddressInfo.class);
+                return objectMapper.readValue(response.body().byteStream(), IPAddressInfo.class);
             } else {
                 return null;
             }
