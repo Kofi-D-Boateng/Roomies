@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.Optional;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -42,9 +43,12 @@ public class RoommateLocationInterceptor extends OncePerRequestFilter {
             return;
         }
         String ip = Utils.getRealIp(request);
-        if(ip != null){
+        if(ip != null && !savedIp(ip)){
             IPAddressInfo ipAddressInfo = ip2Location.reverseLookup(ip);
-            if(ipAddressInfo != null) ipAddressInfoRepository.save(ipAddressInfo);
+            if(ipAddressInfo != null) {
+                ipAddressInfo.getUserAgents().add(request.getHeader("UserAgent"));
+                ipAddressInfoRepository.save(ipAddressInfo);
+            }
             else{
                 log.warn("There was an issue when performing reverse dns look up via external API...");
             }
@@ -52,5 +56,10 @@ public class RoommateLocationInterceptor extends OncePerRequestFilter {
             log.error("IP was not generated for the following request.... ");
         }
         filterChain.doFilter(request,response);
+    }
+
+    private boolean savedIp(String ip){
+        Optional<IPAddressInfo> ipInfo = ipAddressInfoRepository.findByIp(ip);
+        return ipInfo.isPresent();
     }
 }
