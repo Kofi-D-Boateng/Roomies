@@ -4,6 +4,7 @@ import com.roomies.api.enums.ServiceResponse;
 import com.roomies.api.model.DTO.MaskedRoommateDTO;
 import com.roomies.api.model.request.SearchRequest;
 import com.roomies.api.service.SearchService;
+import com.roomies.api.util.Utils;
 import com.roomies.api.util.custom.ResponseTuple;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,7 @@ public class SearchController {
 
     @GetMapping("/find-roommates")
     public ResponseEntity<Set<MaskedRoommateDTO>> findRoommates(@RequestParam("id") String id,@ModelAttribute SearchRequest searchFields){
-        if(searchFields.getAddress().trim().length() == 0 || id == null) return ResponseEntity.status(400).body(null);
+        if(searchFields.getAddress().trim().length() == 0 || Utils.idChecker(id)) return ResponseEntity.status(400).body(null);
         ResponseTuple<ServiceResponse,Set<MaskedRoommateDTO>,Object> result = searchService.findRoommates(id,searchFields);
         if(!result.getVal1().equals(ServiceResponse.SUCCESSFUL)) return ResponseEntity.status(500).body(null);
         return ResponseEntity.status(200).body(result.getVal2());

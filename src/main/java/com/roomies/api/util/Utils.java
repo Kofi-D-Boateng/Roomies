@@ -1,6 +1,7 @@
 package com.roomies.api.util;
 
 import jakarta.servlet.http.HttpServletRequest;
+import org.bson.types.ObjectId;
 
 public class Utils {
     public static String getRealIp(HttpServletRequest request){
@@ -31,4 +32,6 @@ public class Utils {
         String regex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,}$";
         return password.trim().length() >= 8 && password.matches(regex);
     }
+
+    public static boolean idChecker(String id){return id != null && id.trim().length() > 0 && ObjectId.isValid(id);}
 }

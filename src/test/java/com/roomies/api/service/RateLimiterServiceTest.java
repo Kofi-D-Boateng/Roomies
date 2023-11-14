@@ -17,10 +17,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -48,7 +45,7 @@ class RateLimiterServiceTest {
         ipAddressInfo.setBlockedDate(LocalDateTime.now().toEpochSecond(ZoneOffset.UTC));
         ipAddressInfo.setReason( "Exceeded requests");
         ipAddressInfo.setRoommate(null);
-        ipAddressInfo.setUserAgents(List.of("UserAgent1"));
+        ipAddressInfo.setUserAgents(Set.of("UserAgent1"));
         blockedEntities.add(ipAddressInfo);
         lenient().when(repository.findAll()).thenReturn(blockedEntities);
         rateLimiterService.setup();

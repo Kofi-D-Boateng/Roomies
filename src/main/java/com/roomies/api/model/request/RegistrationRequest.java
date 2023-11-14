@@ -1,6 +1,7 @@
 package com.roomies.api.model.request;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.roomies.api.util.Utils;
 import com.roomies.api.util.deserializers.DateMillisecondDeserializer;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -18,4 +19,8 @@ public class RegistrationRequest {
     private String governmentIdentification;
     private Long phoneNumber;
     private boolean isAStudent;
+
+    public boolean validateEmailAndPassword(){
+        return Utils.emailCheck(email) && Utils.passwordChecker(password);
+    }
 }

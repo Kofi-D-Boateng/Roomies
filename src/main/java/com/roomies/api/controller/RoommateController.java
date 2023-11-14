@@ -8,6 +8,7 @@ import com.roomies.api.enums.Update;
 import com.roomies.api.model.DTO.RoommateDTO;
 import com.roomies.api.model.roommate.Roommate;
 import com.roomies.api.service.RoommateService;
+import com.roomies.api.util.Utils;
 import com.roomies.api.util.custom.ResponseTuple;
 import com.roomies.api.util.deserializers.UpdateDeserializer;
 import com.roomies.api.util.serializers.UpdateSerializer;
@@ -43,7 +44,7 @@ public class RoommateController {
     @PutMapping("/secured/update")
     public ResponseEntity<Object>updateProfile(@RequestParam String id, @RequestBody Map<Update,Object> updateObjectMap){
         log.info("Updating profile for user: {}",id);
-        if(id == null || updateObjectMap == null){
+        if(!Utils.idChecker(id) || updateObjectMap == null){
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         }
         ServiceResponse response = roommateService.updateUserProfile(id,updateObjectMap);
@@ -53,7 +54,7 @@ public class RoommateController {
 
     @PostMapping("/secured/request")
     public ResponseEntity<Object> requestRoommate(@RequestParam("id") String userId, @RequestParam("requestUserId") String requestUserId,@RequestBody String message){
-        if(userId == null || requestUserId == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        if(!Utils.idChecker(userId) || !Utils.idChecker(requestUserId)) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         ServiceResponse response = roommateService.requestRoommate(userId,requestUserId,message);
         if(!response.equals(ServiceResponse.SUCCESSFUL)) return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(null);
         return ResponseEntity.status(HttpStatus.OK).body(null);
@@ -61,7 +62,7 @@ public class RoommateController {
 
     @PutMapping("/secured/request/accept")
     public ResponseEntity<Object> acceptRequest(@RequestParam("requestId") String requestId){
-        if(requestId == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        if(Utils.idChecker(requestId)) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         ServiceResponse response = roommateService.acceptRequest(requestId);
         if(!response.equals(ServiceResponse.SUCCESSFUL)) return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(null);
         return ResponseEntity.status(HttpStatus.OK).body(null);
@@ -69,7 +70,7 @@ public class RoommateController {
 
     @DeleteMapping("/secured/request/decline")
     public ResponseEntity<Object> declineRequest(@RequestParam("requestId") String requestId){
-        if(requestId == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        if(Utils.idChecker(requestId)) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         ServiceResponse response = roommateService.removeRequest(requestId);
         if(!response.equals(ServiceResponse.SUCCESSFUL)) return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body(null);
         return ResponseEntity.status(HttpStatus.OK).body(null);
@@ -77,7 +78,7 @@ public class RoommateController {
 
     @PutMapping("/secured/viewership/increase")
     public ResponseEntity<Object> increaseViewerShip(@RequestParam("userId") String userId, @RequestParam("viewedUserId") String viewedUserId){
-        if(userId == null || viewedUserId == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        if(!Utils.idChecker(userId) || !Utils.idChecker(viewedUserId)) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         ServiceResponse response = roommateService.incrementViewership(userId,viewedUserId);
         if(!response.equals(ServiceResponse.SUCCESSFUL)) return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         return ResponseEntity.status(HttpStatus.OK).body(null);
@@ -85,7 +86,7 @@ public class RoommateController {
 
     @PutMapping("/secured/block")
     public ResponseEntity<Object> blockRoommate(@RequestParam("userId") String userId, @RequestParam("blockingUserId") String blockingUserId, @RequestBody String reasonForBlocking){
-        if(userId == null || blockingUserId == null) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        if(!Utils.idChecker(userId) || !Utils.idChecker(blockingUserId)) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         ServiceResponse response = roommateService.blockRoommate(userId,blockingUserId, reasonForBlocking);
         if(!response.equals(ServiceResponse.SUCCESSFUL)) return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         return ResponseEntity.status(HttpStatus.OK).body(null);

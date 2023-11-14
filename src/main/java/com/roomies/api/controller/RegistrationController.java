@@ -25,6 +25,7 @@ public class RegistrationController {
 
     @PostMapping("/signup")
     public ResponseEntity<ServiceResponse> registration(@RequestBody RegistrationRequest request, HttpServletRequest servletRequest){
+        if(!request.validateEmailAndPassword()) return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
         log.info("New Signup request for ip: {} ",getRealIp(servletRequest));
         ServiceResponse response = registrationService.registerNewUser(request);
         if(!response.equals(ServiceResponse.SUCCESSFUL)){
