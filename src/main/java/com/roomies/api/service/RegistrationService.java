@@ -27,6 +27,7 @@ import java.util.UUID;
 public class RegistrationService {
 
     private static final String EMAIL_VERIFICATION_TOPIC = "email-verification";
+    private static final String SUCCESSFUL_SIGNUP = "successful-signup";
     private static final Long VALIDATION_PERIOD = 10L;
 
     @Autowired
@@ -123,6 +124,7 @@ public class RegistrationService {
         accountValidationRepository.save(validation);
         roommateRepository.save(roommate);
         log.info("Successfully authenticated user and token. Saving to database....");
+        kafkaTemplate.send(SUCCESSFUL_SIGNUP,roommate.getId());
         return ServiceResponse.SUCCESSFUL;
     }
 }
