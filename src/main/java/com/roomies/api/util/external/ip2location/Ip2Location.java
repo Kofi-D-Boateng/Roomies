@@ -1,9 +1,7 @@
 package com.roomies.api.util.external.ip2location;
 
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
-import com.roomies.api.model.geolocation.GeolocationRequest;
-import com.roomies.api.model.geolocation.IPAddressInfo;
 import com.roomies.api.util.httpClient.HttpClientSingleton;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
@@ -22,7 +20,7 @@ import java.io.IOException;
 @Component
 @AllArgsConstructor
 @NoArgsConstructor
-public class Ip2Location {
+public class Ip2Location implements IPLocator {
 
     private static final String GEOLOCATION_DOMAIN = "https://api.ip2location.io/?";
     @Value("${com.roomies.ip2location.key}")
