@@ -1,4 +1,4 @@
-package com.roomies.api.model.geolocation;
+package com.roomies.api.util.external.ip2location;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
